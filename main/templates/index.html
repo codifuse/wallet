@@ -38,54 +38,59 @@
 </head>
 
 <body class="gradient-bg text-gray-100 min-h-screen">
-<form style="display:none;">{% csrf_token %}</form>
+    <form style="display:none;">{% csrf_token %}</form>
 
 
 
-    <!-- Верхний бар с балансом -->
-    <div class="mobile-header">
-        <div class="flex justify-between items-center mb-4">
-            <!-- Логотип -->
-            <div class="flex items-center relative">
-                 <img id="logo1" src="{% static 'main/logo.svg' %}" alt="Koinda" class="h-8 transition-all duration-700">
-                <img id="logo2" src="{% static 'main/ico.svg' %}" alt="Koinda" class="h-10 absolute opacity-0 blur-md transition-all duration-700">
-            </div>
-            
+
+    <!-- Основной контейнер приложения -->
+    <div class="app-container">
+<!-- Верхний бар с балансом -->
+<div class="mobile-header">
+
+    <div class="flex justify-between items-center mb-4 relative">
+        <!-- Логотип -->
+        <div class="flex items-center relative flex-shrink-0">
+            <img id="logo1" src="{% static 'main/logo.svg' %}" alt="Koinda" class="h-8 transition-all duration-700">
+            <img id="logo2" src="{% static 'main/ico.svg' %}" alt="Koinda" class="h-10 absolute opacity-0 blur-md transition-all duration-700">
+        </div>
+        
+        <!-- Контейнер для уведомлений - АБСОЛЮТНОЕ ПОЗИЦИОНИРОВАНИЕ ПО ЦЕНТРУ -->
+        <div id="notificationContainer" class="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center pointer-events-none text-sm"></div>
+        
         <!-- Кнопка меню -->
-<div class="flex items-center space-x-2 text-sm">
- <button id="menuToggleBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2">
-  <i class="fas fa-bars text-gray-300"></i>
-</button>
-
-
-</div>
-
-        </div>
-
-
-<!-- Основной баланс -->
-<div class="text-center">
-    <p class="text-3xl font-bold mb-1" id="totalBalance">{{ total|floatformat:0 }} с</p>
-    <div class="flex justify-center gap-6 text-sm">
-        <div>
-            <p class="text-gray-400">Доходы</p>
-            <p class="income font-medium" id="monthIncome">{{ income|floatformat:0 }} с</p>
-        </div>
-        <div>
-            <p class="text-gray-400">Расходы</p>
-            <p class="expense font-medium" id="monthExpense">{{ expense|floatformat:0 }} с</p>
+        <div class="flex items-center space-x-2 text-sm flex-shrink-0">
+            <button id="menuToggleBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2">
+                <i class="fas fa-bars text-gray-300"></i>
+            </button>
         </div>
     </div>
-    
-    <!-- Контейнер для уведомлений -->
-    <div id="notificationContainer" class="absolute top-full left-0 right-0 mt-2 flex justify-center"></div>
+
+    <!-- Основной баланс -->
+    <div class="text-center pt-4 pb-1">
+        <p class="text-4xl font-bold mb-1" id="totalBalance">{{ total|floatformat:0 }} с</p>
+        <div class="flex justify-center gap-6 text-sm">
+            <div>
+                <p class="text-gray-400 text-xl">Доходы</p>
+                <p class="income font-medium text-xl" id="monthIncome">{{ income|floatformat:0 }} с</p>
+            </div>
+            <div>
+                <p class="text-gray-400 text-xl">Расходы</p>
+                <p class="expense font-medium text-xl" id="monthExpense">{{ expense|floatformat:0 }} с</p>
+            </div>
+        </div>
+    </div>
 </div>
+
+
     
     <!-- Контент приложения -->
     <div class="mobile-content">
         <!-- Главная вкладка -->
         <div class="mobile-tab active" id="tab-home">
             <div class="mobile-section">
+
+
 
 
             <!-- Вкладки категорий -->

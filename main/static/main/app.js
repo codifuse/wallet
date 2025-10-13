@@ -305,12 +305,12 @@ function initFormSubmission() {
             
             if (data.success) {
                 modal.classList.add('hidden');
-                console.log('Транзакция успешно добавлена');
+                console.log('Успешно добавлено!');
                 
                 // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
                 await updateInterfaceAfterTransaction(data);
                 
-                showSuccessNotification('Транзакция успешно добавлена');
+                showSuccessNotification('Успешно добавлено!');
             } else {
                 alert(data.error || "Ошибка при сохранении");
             }
@@ -755,7 +755,7 @@ async function saveCategory() {
             await updateGlobalCategories(); // для главной страницы и модалки транзакций
             await updateCategoryTabs(); // для вкладок на главной
             
-            showSuccessNotification('Категория успешно добавлена');
+            showSuccessNotification('Категория добавлена!');
         } else {
             alert(data.error || "Ошибка при сохранении категории");
         }
@@ -993,7 +993,7 @@ function showSuccessNotification(message) {
                 }
             }, 300);
         }
-    }, 3000);
+    }, 2000);
 }
 
 // Инициализация при загрузке страницы
@@ -1435,3 +1435,28 @@ function formatAllAmounts() {
         }
     });
 }
+
+// Добавьте в app.js
+document.addEventListener("DOMContentLoaded", function() {
+    // Предотвращаем скролл body
+    document.body.style.overflow = 'hidden';
+    
+    // Обработчик для предотвращения скролла при достижении границ
+    const mobileContent = document.querySelector('.mobile-content');
+    if (mobileContent) {
+        mobileContent.addEventListener('touchstart', function() {
+            this.style.overflowY = 'auto';
+        });
+        
+        mobileContent.addEventListener('touchend', function() {
+            // Не меняем overflowY, оставляем auto для скролла
+        });
+    }
+    
+    // Предотвращаем скролл body при касании вне контентной области
+    document.addEventListener('touchmove', function(e) {
+        if (!e.target.closest('.mobile-content') && !e.target.closest('.modal-overlay')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+});
