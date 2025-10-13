@@ -974,9 +974,9 @@ function showSuccessNotification(message) {
     
     // Создаем уведомление с иконкой
     const notification = document.createElement('div');
-    notification.className = 'bg-green-600/90 text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in backdrop-blur-sm';
+    notification.className = 'bg-green-600/90 text-white text-sm px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in backdrop-blur-sm';
     notification.innerHTML = `
-        <i class="fas fa-check-circle"></i>
+        
         <span>${message}</span>
     `;
     
