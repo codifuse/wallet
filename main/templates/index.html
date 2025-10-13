@@ -572,6 +572,13 @@
       
       <form id="changePasswordForm" class="space-y-4">
         {% csrf_token %}
+        
+        <!-- Поле для текущего пароля (если уже меняли) -->
+        <div id="currentPasswordField" class="hidden">
+          <input type="password" name="current_password" placeholder="Текущий пароль" 
+                 class="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none">
+        </div>
+        
         <div>
           <input type="password" name="new_password" placeholder="Новый пароль" required 
                  class="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none">
@@ -580,13 +587,15 @@
           <input type="password" name="confirm_password" placeholder="Повторите пароль" required 
                  class="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 outline-none">
         </div>
-        <button type="submit" class="btn-primary w-full py-3 rounded-lg text-white font-semibold bg-blue-600 hover:bg-blue-700 transition-colors">
-          Сохранить пароль
+        
+        <!-- Кнопка с состоянием загрузки -->
+        <button type="submit" class="change-password-submit-btn btn-primary w-full py-3 rounded-lg text-white font-semibold relative overflow-hidden">
+          <span class="change-password-btn-text">Сохранить пароль</span>
+          <div class="change-password-spinner hidden absolute inset-0 flex items-center justify-center">
+            <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
         </button>
       </form>
-      
-      <p id="passwordError" class="text-red-400 text-sm mt-2 hidden"></p>
-      <p id="passwordSuccess" class="text-green-400 text-sm mt-2 hidden"></p>
       
       <button onclick="toggleChangePasswordModal()" class="mt-4 w-full text-gray-400 hover:text-white py-2 transition-colors">
         Отмена
@@ -596,6 +605,9 @@
 </div>
 
 <script>
+// Переменная для отслеживания первой смены пароля
+let isFirstPasswordChange = {% if not user.userprofile.password_changed %}true{% else %}false{% endif %};
+
 // Функции для управления модалкой смены пароля
 function toggleChangePasswordModal() {
   const modal = document.getElementById('changePasswordModal');
@@ -603,13 +615,106 @@ function toggleChangePasswordModal() {
   
   // Сбрасываем форму
   document.getElementById('changePasswordForm').reset();
-  document.getElementById('passwordError').classList.add('hidden');
-  document.getElementById('passwordSuccess').classList.add('hidden');
+  
+  // Сбрасываем состояние кнопки
+  setChangePasswordButtonLoading(false);
+  document.querySelector('.change-password-submit-btn').classList.add('btn-primary');
+  document.querySelector('.change-password-submit-btn').classList.remove('bg-red-600', 'cursor-not-allowed', 'bg-green-600');
+}
+
+// Функции для управления состоянием кнопки смены пароля
+function setChangePasswordButtonLoading(isLoading) {
+  const btn = document.querySelector('.change-password-submit-btn');
+  const btnText = btn.querySelector('.change-password-btn-text');
+  const spinner = btn.querySelector('.change-password-spinner');
+  
+  if (btn && btnText && spinner) {
+    if (isLoading) {
+      btn.disabled = true;
+      btnText.classList.add('opacity-0');
+      spinner.classList.remove('hidden');
+    } else {
+      btn.disabled = false;
+      btnText.classList.remove('opacity-0');
+      spinner.classList.add('hidden');
+    }
+  }
+}
+
+function showChangePasswordButtonError(errorMessage) {
+  const btn = document.querySelector('.change-password-submit-btn');
+  const btnText = btn.querySelector('.change-password-btn-text');
+  const spinner = btn.querySelector('.change-password-spinner');
+  
+  if (btn && btnText && spinner) {
+    // Сохраняем оригинальный текст
+    const originalText = btnText.textContent;
+    
+    // Показываем ошибку
+    btn.disabled = true;
+    spinner.classList.add('hidden');
+    btnText.classList.remove('opacity-0');
+    btnText.textContent = errorMessage;
+    btn.classList.remove('btn-primary');
+    btn.classList.add('bg-red-600', 'cursor-not-allowed');
+    
+    // Через 4 секунды возвращаем нормальное состояние
+    setTimeout(() => {
+      btn.disabled = false;
+      btnText.textContent = originalText;
+      btn.classList.add('btn-primary');
+      btn.classList.remove('bg-red-600', 'cursor-not-allowed');
+    }, 2000);
+  }
+}
+
+function showChangePasswordButtonSuccess(successMessage) {
+  const btn = document.querySelector('.change-password-submit-btn');
+  const btnText = btn.querySelector('.change-password-btn-text');
+  const spinner = btn.querySelector('.change-password-spinner');
+  
+  if (btn && btnText && spinner) {
+    // Показываем успех
+    btn.disabled = true;
+    spinner.classList.add('hidden');
+    btnText.classList.remove('opacity-0');
+    btnText.textContent = successMessage;
+    btn.classList.remove('btn-primary');
+    btn.classList.add('bg-green-600', 'cursor-not-allowed');
+    
+    // Только при первой смене пароля закрываем модалки и перезагружаем страницу
+    if (isFirstPasswordChange) {
+      setTimeout(() => {
+        toggleChangePasswordModal();
+        toggleMenuModal();
+        location.reload();
+      }, 2000);
+    } else {
+      // При повторной смене просто сбрасываем форму через 2 секунды
+      setTimeout(() => {
+        document.getElementById('changePasswordForm').reset();
+        setChangePasswordButtonLoading(false);
+        btn.classList.add('btn-primary');
+        btn.classList.remove('bg-green-600', 'cursor-not-allowed');
+        btnText.textContent = "Сохранить пароль";
+      }, 2000);
+    }
+  }
 }
 
 // Обработчик кнопки смены пароля
 document.getElementById('changePasswordBtn').addEventListener('click', function() {
   toggleChangePasswordModal();
+  
+  // Показываем поле для текущего пароля, если пользователь уже менял пароль
+  const currentPasswordField = document.getElementById('currentPasswordField');
+  if ({{ user.userprofile.password_changed|yesno:"true,false" }}) {
+    currentPasswordField.classList.remove('hidden');
+    currentPasswordField.querySelector('input').required = true;
+  } else {
+    currentPasswordField.classList.add('hidden');
+    currentPasswordField.querySelector('input').required = false;
+  }
 });
 
 // Закрытие модалки по клику вне окна
@@ -623,11 +728,9 @@ document.getElementById('changePasswordModal').addEventListener('click', functio
 document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const form = e.target;
-  const errorBox = document.getElementById('passwordError');
-  const successBox = document.getElementById('passwordSuccess');
   
-  errorBox.classList.add('hidden');
-  successBox.classList.add('hidden');
+  // Показываем загрузку на кнопке
+  setChangePasswordButtonLoading(true);
 
   const formData = new FormData(form);
   const newPassword = formData.get('new_password');
@@ -636,14 +739,12 @@ document.getElementById('changePasswordForm').addEventListener('submit', async f
 
   // Валидация
   if (newPassword !== confirmPassword) {
-    errorBox.textContent = "Пароли не совпадают";
-    errorBox.classList.remove('hidden');
+    showChangePasswordButtonError("Пароли не совпадают");
     return;
   }
 
   if (newPassword.length < 6) {
-    errorBox.textContent = "Пароль должен быть не менее 6 символов";
-    errorBox.classList.remove('hidden');
+    showChangePasswordButtonError("Пароль должен быть не менее 6 символов");
     return;
   }
 
@@ -662,23 +763,19 @@ document.getElementById('changePasswordForm').addEventListener('submit', async f
     const data = await response.json();
     
     if (data.success) {
-      successBox.textContent = data.message || "Пароль успешно изменен";
-      successBox.classList.remove('hidden');
+      // Успешная смена пароля
+      showChangePasswordButtonSuccess(data.message || "Пароль изменен!");
       
-      // Закрываем модалки через 2 секунды и перезагружаем страницу
-      setTimeout(() => {
-        toggleChangePasswordModal();
-        toggleMenuModal();
-        location.reload(); // Перезагружаем чтобы обновить статус смены пароля
-      }, 2000);
+      // После первой успешной смены устанавливаем флаг в false
+      if (isFirstPasswordChange) {
+        isFirstPasswordChange = false;
+      }
     } else {
-      errorBox.textContent = data.error || "Ошибка при смене пароля";
-      errorBox.classList.remove('hidden');
+      showChangePasswordButtonError(data.error || "Ошибка при смене пароля");
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    errorBox.textContent = "Произошла ошибка при отправке формы";
-    errorBox.classList.remove('hidden');
+    showChangePasswordButtonError("Ошибка соединения");
   }
 });
 </script>

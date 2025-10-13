@@ -271,6 +271,7 @@
 
     
     <!-- Модальное окно авторизации -->
+
 <!-- В файле hello.html замените модальное окно авторизации на этот код: -->
 <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center">
   <div class="bg-gray-800 rounded-2xl p-8 w-full max-w-sm text-center shadow-xl">
@@ -286,17 +287,29 @@
       {% csrf_token %}
       <input type="text" name="username" placeholder="Логин" required class="w-full p-3 rounded-lg bg-gray-700 text-white">
       <input type="password" name="password" placeholder="Пароль" required class="w-full p-3 rounded-lg bg-gray-700 text-white">
-      <button type="submit" class="btn-primary w-full py-3 rounded-lg text-white font-semibold">Войти</button>
+      
+      <!-- Кнопка авторизации с состоянием загрузки -->
+      <button type="submit" class="login-submit-btn btn-primary w-full py-3 rounded-lg text-white font-semibold relative overflow-hidden">
+        <span class="login-btn-text">Войти</span>
+        <div class="login-spinner hidden absolute inset-0 flex items-center justify-center">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </button>
     </form>
 
     <!-- Форма регистрации (изначально скрыта) -->
     <form id="registerForm" class="space-y-4 hidden">
       {% csrf_token %}
       <input type="text" name="username" placeholder="Придумайте логин" required class="w-full p-3 rounded-lg bg-gray-700 text-white">
-      <button type="submit" class="btn-primary w-full py-3 rounded-lg text-white font-semibold">Зарегистрироваться</button>
+      
+      <!-- Кнопка регистрации с состоянием загрузки -->
+      <button type="submit" class="register-submit-btn btn-primary w-full py-3 rounded-lg text-white font-semibold relative overflow-hidden">
+        <span class="register-btn-text">Зарегистрироваться</span>
+        <div class="register-spinner hidden absolute inset-0 flex items-center justify-center">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </button>
     </form>
-
-    <p id="loginError" class="text-red-400 text-sm mt-2 hidden"></p>
 
     <!-- Ссылка переключения между формами -->
     <div class="mt-4 text-center">
@@ -319,6 +332,52 @@ function toggleLoginModal() {
   resetAuthForms();
 }
 
+// Функции для управления состояниями кнопок
+function setButtonLoading(buttonClass, isLoading) {
+  const btn = document.querySelector(buttonClass);
+  const btnText = btn.querySelector('.login-btn-text, .register-btn-text');
+  const spinner = btn.querySelector('.login-spinner, .register-spinner');
+  
+  if (btn && btnText && spinner) {
+    if (isLoading) {
+      btn.disabled = true;
+      btnText.classList.add('opacity-0');
+      spinner.classList.remove('hidden');
+    } else {
+      btn.disabled = false;
+      btnText.classList.remove('opacity-0');
+      spinner.classList.add('hidden');
+    }
+  }
+}
+
+function showButtonError(buttonClass, errorMessage) {
+  const btn = document.querySelector(buttonClass);
+  const btnText = btn.querySelector('.login-btn-text, .register-btn-text');
+  const spinner = btn.querySelector('.login-spinner, .register-spinner');
+  
+  if (btn && btnText && spinner) {
+    // Сохраняем оригинальный текст
+    const originalText = btnText.textContent;
+    
+    // Показываем ошибку
+    btn.disabled = true;
+    spinner.classList.add('hidden');
+    btnText.classList.remove('opacity-0');
+    btnText.textContent = errorMessage;
+    btn.classList.remove('btn-primary');
+    btn.classList.add('bg-red-600', 'cursor-not-allowed');
+    
+    // Через 4 секунды возвращаем нормальное состояние
+    setTimeout(() => {
+      btn.disabled = false;
+      btnText.textContent = originalText;
+      btn.classList.add('btn-primary');
+      btn.classList.remove('bg-red-600', 'cursor-not-allowed');
+    }, 2000);
+  }
+}
+
 // Переключение между авторизацией и регистрацией
 document.getElementById('toggleAuthMode').addEventListener('click', function() {
   const loginForm = document.getElementById('loginForm');
@@ -339,9 +398,6 @@ document.getElementById('toggleAuthMode').addEventListener('click', function() {
     modalTitle.textContent = 'Создать аккаунт';
     toggleBtn.textContent = 'Уже есть аккаунт? Войти';
   }
-  
-  // Сбрасываем ошибки
-  document.getElementById('loginError').classList.add('hidden');
 });
 
 // Сброс форм
@@ -352,33 +408,57 @@ function resetAuthForms() {
   document.getElementById('registerForm').classList.add('hidden');
   document.getElementById('modalTitle').textContent = 'Войти в аккаунт';
   document.getElementById('toggleAuthMode').textContent = 'У Вас еще нет аккаунта? Зарегистрироваться';
-  document.getElementById('loginError').classList.add('hidden');
+  
+  // Сбрасываем состояния кнопок
+  const loginBtn = document.querySelector('.login-submit-btn');
+  const registerBtn = document.querySelector('.register-submit-btn');
+  
+  if (loginBtn) {
+    loginBtn.disabled = false;
+    loginBtn.querySelector('.login-btn-text').classList.remove('opacity-0');
+    loginBtn.querySelector('.login-spinner').classList.add('hidden');
+    loginBtn.classList.add('btn-primary');
+    loginBtn.classList.remove('bg-red-600', 'cursor-not-allowed');
+  }
+  
+  if (registerBtn) {
+    registerBtn.disabled = false;
+    registerBtn.querySelector('.register-btn-text').classList.remove('opacity-0');
+    registerBtn.querySelector('.register-spinner').classList.add('hidden');
+    registerBtn.classList.add('btn-primary');
+    registerBtn.classList.remove('bg-red-600', 'cursor-not-allowed');
+  }
 }
 
 // AJAX авторизация
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const form = e.target;
-  const errorBox = document.getElementById('loginError');
-  errorBox.classList.add('hidden');
+  
+  // Показываем загрузку на кнопке
+  setButtonLoading('.login-submit-btn', true);
 
   const formData = new FormData(form);
   const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
 
-  const response = await fetch("{% url 'login' %}", {
-    method: "POST",
-    headers: {
-      'X-CSRFToken': csrfToken
-    },
-    body: formData
-  });
+  try {
+    const response = await fetch("{% url 'login' %}", {
+      method: "POST",
+      headers: {
+        'X-CSRFToken': csrfToken
+      },
+      body: formData
+    });
 
-  if (response.redirected) {
-    window.location.href = response.url;
-  } else {
-    const data = await response.json().catch(() => ({}));
-    errorBox.textContent = data.error || "Неверный логин или пароль";
-    errorBox.classList.remove('hidden');
+    if (response.redirected) {
+      window.location.href = response.url;
+    } else {
+      const data = await response.json().catch(() => ({}));
+      showButtonError('.login-submit-btn', data.error || "Неверный логин или пароль");
+    }
+  } catch (error) {
+    console.error('Ошибка:', error);
+    showButtonError('.login-submit-btn', "Ошибка соединения");
   }
 });
 
@@ -386,8 +466,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 document.getElementById('registerForm').addEventListener('submit', async function(e) {
   e.preventDefault();
   const form = e.target;
-  const errorBox = document.getElementById('loginError');
-  errorBox.classList.add('hidden');
+  
+  // Показываем загрузку на кнопке
+  setButtonLoading('.register-submit-btn', true);
 
   const formData = new FormData(form);
   const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -408,19 +489,32 @@ document.getElementById('registerForm').addEventListener('submit', async functio
       // Успешная регистрация и авторизация - перенаправляем на главную
       window.location.href = "{% url 'index' %}";
     } else {
-      errorBox.textContent = data.error || "Ошибка при регистрации";
-      errorBox.classList.remove('hidden');
+      showButtonError('.register-submit-btn', data.error || "Ошибка при регистрации");
     }
   } catch (error) {
     console.error('Ошибка:', error);
-    errorBox.textContent = "Произошла ошибка при отправке формы";
-    errorBox.classList.remove('hidden');
+    showButtonError('.register-submit-btn', "Ошибка соединения");
   }
 });
 
-
+// Добавляем CSS для анимации спиннера
+const style = document.createElement('style');
+style.textContent = `
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+`;
+document.head.appendChild(style);
 </script>
-
 
 <script>
 function toggleLoginModal() {
