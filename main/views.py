@@ -90,8 +90,26 @@ def add_transaction(request):
                 description=description
             )
             
+            # Возвращаем данные о созданной транзакции для динамического обновления
+            transaction_data = {
+                'id': transaction.id,
+                'type': transaction.type,
+                'amount': float(transaction.amount),
+                'description': transaction.description,
+                'created_at': transaction.created_at.isoformat(),
+                'category_id': transaction.category.id,
+                'category_name': transaction.category.name,
+                'category_icon': transaction.category.icon,
+                'category_color': transaction.category.color,
+            }
+            
             print(f"Транзакция создана: {transaction}")
-            return JsonResponse({"success": True})
+            return JsonResponse({
+                "success": True, 
+                "transaction": transaction_data,
+                "transaction_type": transaction.type,
+                "amount": float(transaction.amount)
+            })
             
         except Category.DoesNotExist:
             return JsonResponse({"success": False, "error": "Категория не найдена"})

@@ -120,6 +120,10 @@ function updateBalanceDisplay() {
 // МОДАЛКА ДОБАВЛЕНИЯ ТРАНЗАКЦИИ
 // =============================================
 
+// =============================================
+// МОДАЛКА ДОБАВЛЕНИЯ ТРАНЗАКЦИИ
+// =============================================
+
 function initTransactionModal() {
     const modal = document.getElementById("transactionModal");
     const openBtn = document.getElementById("openTransactionModalBtn");
@@ -141,7 +145,6 @@ function initTransactionModal() {
         await updateGlobalCategories();
         loadCategories();
     });
-
 
     // Закрытие модалки
     if (closeBtn) {
@@ -167,6 +170,208 @@ function initTransactionModal() {
     initFormSubmission();
 }
 
+function initFormSubmission() {
+    const form = document.getElementById("transactionForm");
+    const modal = document.getElementById("transactionModal");
+    
+    if (!form) return;
+    
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Получаем выбранный тип операции
+        const activeTypeBtn = document.querySelector('.type-btn.bg-red-600, .type-btn.bg-green-600');
+        if (!activeTypeBtn) {
+            alert('Выберите тип операции (Расход/Доход)');
+            return;
+        }
+        const transactionType = activeTypeBtn.dataset.type;
+        
+        // Проверяем сумму (убираем пробелы перед проверкой)
+        const amountValue = document.getElementById('amountInput').value.replace(/\s/g, '');
+        if (!amountValue || parseFloat(amountValue) <= 0 || amountValue === '0') {
+            alert('Введите корректную сумму');
+            return;
+        }
+        
+        // Проверяем категорию
+        const selectedCategory = document.getElementById('selectedCategory').value;
+        if (!selectedCategory) {
+            alert('Выберите категорию');
+            return;
+        }
+        
+        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убедимся, что категория все еще существует
+        const categoryExists = window.categories && window.categories.some(cat => cat.id == selectedCategory);
+        if (!categoryExists) {
+            alert('Выбранная категория больше не существует. Пожалуйста, выберите другую категорию.');
+            // Обновляем список категорий в модалке
+            await updateGlobalCategories();
+            loadCategories();
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('type', transactionType);
+        formData.append('amount', amountValue);
+        formData.append('category', selectedCategory);
+        formData.append('description', document.getElementById('descriptionInput').value);
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        try {
+            console.log('Отправка данных транзакции...');
+            const response = await fetch(window.ADD_TRANSACTION_URL, {
+                method: "POST",
+                headers: { 
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                modal.classList.add('hidden');
+                console.log('Транзакция успешно добавлена');
+                
+                // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+                await updateInterfaceAfterTransaction(data);
+                
+                showSuccessNotification('Транзакция успешно добавлена');
+            } else {
+                alert(data.error || "Ошибка при сохранении");
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert("Произошла ошибка при отправке формы");
+        }
+    });
+}
+
+// Функция для обновления интерфейса после добавления транзакции
+async function updateInterfaceAfterTransaction(data) {
+    // 1. Обновляем балансы
+    updateBalancesAfterTransaction(data.transaction_type, data.amount);
+    
+    // 2. Добавляем новую транзакцию в список
+    addTransactionToList(data.transaction);
+    
+    // 3. Обновляем статистику (если нужно)
+    await updateStatistics();
+    
+    // 4. Проверяем пустые состояния
+    checkEmptyStates();
+}
+
+// Функция для обновления балансов после добавления транзакции
+function updateBalancesAfterTransaction(type, amount) {
+    const totalElement = document.getElementById('totalBalance');
+    const incomeElement = document.getElementById('monthIncome');
+    const expenseElement = document.getElementById('monthExpense');
+    
+    if (!totalElement || !incomeElement || !expenseElement) return;
+    
+    // Получаем текущие значения (убираем форматирование и текст "с")
+    const currentTotal = parseFloat(totalElement.textContent.replace(/\s/g, '').replace('с', ''));
+    const currentIncome = parseFloat(incomeElement.textContent.replace(/\s/g, '').replace('с', ''));
+    const currentExpense = parseFloat(expenseElement.textContent.replace(/\s/g, '').replace('с', ''));
+    
+    let newTotal = currentTotal;
+    let newIncome = currentIncome;
+    let newExpense = currentExpense;
+    
+    if (type === 'income') {
+        // Добавляем доход: увеличиваем общий баланс и доходы
+        newTotal = currentTotal + parseFloat(amount);
+        newIncome = currentIncome + parseFloat(amount);
+    } else {
+        // Добавляем расход: уменьшаем общий баланс и увеличиваем расходы
+        newTotal = currentTotal - parseFloat(amount);
+        newExpense = currentExpense + parseFloat(amount);
+    }
+    
+    // Обновляем отображение
+    totalElement.textContent = formatAmount(newTotal) + ' с';
+    incomeElement.textContent = formatAmount(newIncome) + ' с';
+    expenseElement.textContent = formatAmount(newExpense) + ' с';
+    
+    // Обновляем глобальные переменные
+    if (window.initialBalances) {
+        window.initialBalances.total = newTotal;
+        window.initialBalances.income = newIncome;
+        window.initialBalances.expense = newExpense;
+    }
+}
+
+// Функция для добавления транзакции в список
+function addTransactionToList(transaction) {
+    const transactionsContainer = document.getElementById('transactionsListContainer');
+    if (!transactionsContainer) return;
+    
+    // Скрываем пустое состояние если оно отображается
+    const emptyStateAll = document.getElementById('emptyStateAll');
+    if (emptyStateAll && emptyStateAll.style.display !== 'none') {
+        emptyStateAll.style.display = 'none';
+    }
+    
+    // Создаем HTML для новой транзакции
+    const transactionHTML = `
+        <div class="transaction-item bg-gray-800 rounded-lg p-3 flex justify-between items-center" 
+             data-category-id="${transaction.category_id}"
+             data-transaction-id="${transaction.id}">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" 
+                     style="background-color: ${transaction.category_color}22; color: ${transaction.category_color}">
+                    <i class="${transaction.category_icon}"></i>
+                </div>
+                <div>
+                    <p class="font-medium">${transaction.category_name}</p>
+                    ${transaction.description ? `<p class="text-xs text-gray-400">${transaction.description}</p>` : ''}
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <p class="${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'} font-semibold">
+                        ${transaction.type === 'income' ? '+' : '-'}${formatAmount(transaction.amount)} с
+                    </p>
+                    <p class="text-xs text-gray-400">${new Date(transaction.created_at).toLocaleDateString('ru-RU')} ${new Date(transaction.created_at).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</p>
+                </div>
+                <button class="delete-transaction-btn text-red-400 hover:text-red-300 p-2 transition-colors" 
+                        data-transaction-id="${transaction.id}"
+                        title="Удалить транзакцию">
+                    <i class="fas fa-trash text-sm"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Добавляем транзакцию в начало списка
+    if (transactionsContainer.children.length > 0 && !transactionsContainer.children[0].classList.contains('transaction-item')) {
+        // Если первый элемент - пустое состояние, заменяем его
+        transactionsContainer.innerHTML = transactionHTML + transactionsContainer.innerHTML;
+    } else {
+        // Добавляем в начало
+        transactionsContainer.insertAdjacentHTML('afterbegin', transactionHTML);
+    }
+}
+
+// Функция для обновления статистики (заглушка - нужно реализовать в зависимости от вашего бэкенда)
+async function updateStatistics() {
+    // Здесь можно добавить запрос к бэкенду для обновления статистики
+    // или обновить локально, если данные доступны
+    console.log('Обновление статистики...');
+}
+
+// Обновите также функцию formatAmount для корректной работы
+function formatAmount(amount) {
+    // Преобразуем в число, округляем до целого, форматируем с разделителями тысяч
+    const number = typeof amount === 'string' ? parseFloat(amount) : amount;
+    const rounded = Math.round(number);
+    
+    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
 function initTypeButtons() {
     const typeButtons = document.querySelectorAll('.type-btn');
     
@@ -308,8 +513,11 @@ function initFormSubmission() {
             if (data.success) {
                 modal.classList.add('hidden');
                 console.log('Транзакция успешно добавлена');
-                // Обновляем страницу для отображения новых данных
-                location.reload();
+                
+                // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
+                await updateInterfaceAfterTransaction(data);
+                
+                showSuccessNotification('Транзакция успешно добавлена');
             } else {
                 alert(data.error || "Ошибка при сохранении");
             }
@@ -318,6 +526,115 @@ function initFormSubmission() {
             alert("Произошла ошибка при отправке формы");
         }
     });
+}
+
+// Функция для обновления интерфейса после добавления транзакции
+async function updateInterfaceAfterTransaction(data) {
+    // 1. Обновляем балансы
+    updateBalancesAfterTransaction(data.transaction_type, data.amount);
+    
+    // 2. Добавляем новую транзакцию в список
+    addTransactionToList(data.transaction);
+    
+    // 3. Проверяем пустые состояния
+    checkEmptyStates();
+}
+
+// Функция для обновления балансов после добавления транзакции
+function updateBalancesAfterTransaction(type, amount) {
+    const totalElement = document.getElementById('totalBalance');
+    const incomeElement = document.getElementById('monthIncome');
+    const expenseElement = document.getElementById('monthExpense');
+    
+    if (!totalElement || !incomeElement || !expenseElement) return;
+    
+    // Получаем текущие значения (убираем форматирование и текст "с")
+    const currentTotal = parseFloat(totalElement.textContent.replace(/\s/g, '').replace('с', ''));
+    const currentIncome = parseFloat(incomeElement.textContent.replace(/\s/g, '').replace('с', ''));
+    const currentExpense = parseFloat(expenseElement.textContent.replace(/\s/g, '').replace('с', ''));
+    
+    let newTotal = currentTotal;
+    let newIncome = currentIncome;
+    let newExpense = currentExpense;
+    
+    if (type === 'income') {
+        // Добавляем доход: увеличиваем общий баланс и доходы
+        newTotal = currentTotal + parseFloat(amount);
+        newIncome = currentIncome + parseFloat(amount);
+    } else {
+        // Добавляем расход: уменьшаем общий баланс и увеличиваем расходы
+        newTotal = currentTotal - parseFloat(amount);
+        newExpense = currentExpense + parseFloat(amount);
+    }
+    
+    // Обновляем отображение
+    totalElement.textContent = formatAmount(newTotal) + ' с';
+    incomeElement.textContent = formatAmount(newIncome) + ' с';
+    expenseElement.textContent = formatAmount(newExpense) + ' с';
+    
+    // Обновляем глобальные переменные
+    if (window.initialBalances) {
+        window.initialBalances.total = newTotal;
+        window.initialBalances.income = newIncome;
+        window.initialBalances.expense = newExpense;
+    }
+}
+
+// Функция для добавления транзакции в список
+function addTransactionToList(transaction) {
+    const transactionsContainer = document.getElementById('transactionsListContainer');
+    if (!transactionsContainer) return;
+    
+    // Скрываем пустое состояние если оно отображается
+    const emptyStateAll = document.getElementById('emptyStateAll');
+    if (emptyStateAll && emptyStateAll.style.display !== 'none') {
+        emptyStateAll.style.display = 'none';
+    }
+    
+    // Форматируем дату
+    const transactionDate = new Date(transaction.created_at);
+    const formattedDate = transactionDate.toLocaleDateString('ru-RU');
+    const formattedTime = transactionDate.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+    
+    // Создаем HTML для новой транзакции
+    const transactionHTML = `
+        <div class="transaction-item bg-gray-800 rounded-lg p-3 flex justify-between items-center" 
+             data-category-id="${transaction.category_id}"
+             data-transaction-id="${transaction.id}">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" 
+                     style="background-color: ${transaction.category_color}22; color: ${transaction.category_color}">
+                    <i class="${transaction.category_icon}"></i>
+                </div>
+                <div>
+                    <p class="font-medium">${transaction.category_name}</p>
+                    ${transaction.description ? `<p class="text-xs text-gray-400">${transaction.description}</p>` : ''}
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="text-right">
+                    <p class="${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'} font-semibold">
+                        ${transaction.type === 'income' ? '+' : '-'}${formatAmount(transaction.amount)} с
+                    </p>
+                    <p class="text-xs text-gray-400">${formattedDate} ${formattedTime}</p>
+                </div>
+                <button class="delete-transaction-btn text-red-400 hover:text-red-300 p-2 transition-colors" 
+                        data-transaction-id="${transaction.id}"
+                        title="Удалить транзакцию">
+                    <i class="fas fa-trash text-sm"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Добавляем транзакцию в начало списка
+    if (transactionsContainer.children.length > 0 && !transactionsContainer.children[0].classList.contains('transaction-item')) {
+        // Если первый элемент - пустое состояние, заменяем его
+        transactionsContainer.innerHTML = transactionHTML + transactionsContainer.innerHTML;
+    } else {
+        // Добавляем в начало
+        transactionsContainer.insertAdjacentHTML('afterbegin', transactionHTML);
+    }
 }
 
 function resetTransactionForm() {
