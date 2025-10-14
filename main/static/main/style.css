@@ -1153,18 +1153,18 @@ body {
     cursor: not-allowed;
 }
 
-/* --- Исправление перекрытия контента нижним меню --- */
+/* --- Финальная корректировка отступа под футером --- */
+.mobile-content {
+  padding-bottom: 100px !important; /* чуть больше, чем высота футера */
+}
+
+/* Для устройств с безопасной зоной (iPhone и др.) */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   .mobile-content {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
   }
 
   .mobile-nav {
     padding-bottom: env(safe-area-inset-bottom);
   }
-}
-
-/* Для старых браузеров без поддержки safe-area */
-.mobile-content {
-  padding-bottom: 80px !important;
 }
