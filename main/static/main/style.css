@@ -1152,3 +1152,19 @@ body {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* --- Исправление перекрытия контента нижним меню --- */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-content {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-nav {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Для старых браузеров без поддержки safe-area */
+.mobile-content {
+  padding-bottom: 80px !important;
+}
