@@ -482,17 +482,16 @@ function resetTransactionForm() {
         btn.classList.add('bg-gray-700', 'border-gray-600', 'text-gray-300');
     });
     
-    // Установка расхода как типа по умолчанию
+    // СБРОС КНОПОК ТИПА ОПЕРАЦИИ - НИЧЕГО НЕ АКТИВНО ПО УМОЛЧАНИЮ
     const expenseBtn = document.querySelector('.type-btn[data-type="expense"]');
     const incomeBtn = document.querySelector('.type-btn[data-type="income"]');
     
     if (expenseBtn && incomeBtn) {
-        // Сброс всех кнопок
+        // Сбрасываем все кнопки к неактивному состоянию
         expenseBtn.classList.remove('bg-red-600', 'text-white', 'border-red-600');
-        incomeBtn.classList.remove('bg-green-600', 'text-white', 'border-green-600');
+        expenseBtn.classList.add('bg-gray-700', 'text-gray-300', 'border-gray-600');
         
-        // Установка расхода как активного
-        expenseBtn.classList.add('bg-red-600', 'text-white', 'border-red-600');
+        incomeBtn.classList.remove('bg-green-600', 'text-white', 'border-green-600');
         incomeBtn.classList.add('bg-gray-700', 'text-gray-300', 'border-gray-600');
     }
     
@@ -788,7 +787,7 @@ async function saveCategory() {
         
         const data = await response.json();
         
- if (data.success) {
+     if (data.success) {
         document.getElementById('categoryModal').classList.add('hidden');
         nameInput.value = '';
         
@@ -802,19 +801,14 @@ async function saveCategory() {
         });
         
         // ОБНОВЛЯЕМ ВСЕ СПИСКИ КАТЕГОРИЙ
-        await loadUserCategories(); // для вкладки категорий
+        await loadUserCategories(); // для вкладки категорий (теперь со статистикой)
         await updateGlobalCategories(); // для главной страницы и модалки транзакций
         await updateCategoryTabs(); // для вкладок на главной
         
-        // ОБНОВЛЯЕМ ТЕКУЩИЕ ПЕРЕМЕННЫЕ ФИЛЬТРАЦИИ
-        if (typeof window.currentCategory !== 'undefined') {
-            window.currentCategory = 'all'; // Сбрасываем на "Все" после добавления категории
-        }
-        
         showSuccessNotification('Категория добавлена!');
-        } else {
-            alert(data.error || "Ошибка при сохранении категории");
-        }
+    } else {
+        alert(data.error || "Ошибка при сохранении категории");
+    }
     } catch (error) {
         console.error('Ошибка:', error);
         alert("Произошла ошибка при отправке формы");
@@ -826,7 +820,8 @@ async function loadUserCategories() {
     if (!categoriesList) return;
     
     try {
-        const response = await fetch('/get_categories/');
+        // Используем новый endpoint со статистикой
+        const response = await fetch('/get_categories_with_stats/');
         const data = await response.json();
         
         categoriesList.innerHTML = '';
@@ -836,17 +831,27 @@ async function loadUserCategories() {
                 const categoryElement = document.createElement('div');
                 categoryElement.className = 'category-item bg-gray-800 rounded-lg p-3 flex justify-between items-center';
                 categoryElement.innerHTML = `
-                    <div class="flex items-center space-x-3">
+                    <div class="flex items-center space-x-3 flex-1">
                         <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: ${category.color}22; color: ${category.color}">
                             <i class="${category.icon}"></i>
                         </div>
-                        <div>
+                        <div class="flex-1">
                             <p class="font-medium">${category.name}</p>
+                            <div class="flex items-center space-x-2 text-xs text-gray-400 mt-1">
+                                <span>Расходы: ${formatAmount(category.expense_amount)} с</span>
+                            </div>
                         </div>
                     </div>
-                    <button class="delete-category-btn text-red-400 hover:text-red-300 p-2" data-category-id="${category.id}">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="flex items-center space-x-3">
+                        ${category.percentage > 0 ? `
+                            <div class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-lg text-sm font-semibold min-w-12 text-center">
+                                ${category.percentage}%
+                            </div>
+                        ` : ''}
+                        <button class="delete-category-btn text-red-400 hover:text-red-300 p-2 transition-colors" data-category-id="${category.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 `;
                 
                 categoriesList.appendChild(categoryElement);
@@ -869,6 +874,12 @@ async function loadUserCategories() {
         }
     } catch (error) {
         console.error('Ошибка при загрузке категорий:', error);
+        categoriesList.innerHTML = `
+            <div class="text-center py-8 text-red-400">
+                <i class="fas fa-exclamation-triangle text-3xl mb-3"></i>
+                <p>Ошибка загрузки категорий</p>
+            </div>
+        `;
     }
 }
 
@@ -965,6 +976,7 @@ async function processCategoryDeletion(categoryId, categoryElement) {
             // Обновляем глобальные списки категорий
             await updateGlobalCategories();
             await updateCategoryTabs();
+            await loadUserCategories(); // Перезагружаем категории со статистикой
         } else {
             // В случае ошибки показываем сообщение и восстанавливаем элемент
             categoryElement.innerHTML = `

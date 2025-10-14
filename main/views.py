@@ -405,3 +405,43 @@ def get_transactions(request):
         'transactions': transactions_data,
         'has_more': page_obj.has_next()
     })
+
+@login_required
+def get_categories_with_stats(request):
+    categories = Category.objects.filter(user=request.user)
+    
+    # Получаем общий доход за текущий месяц
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    total_income = Transaction.objects.filter(
+        user=request.user,
+        type='income',
+        created_at__gte=month_start
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    categories_data = []
+    for category in categories:
+        # Сумма расходов по категории за месяц
+        category_expense = Transaction.objects.filter(
+            user=request.user,
+            category=category,
+            type='expense',
+            created_at__gte=month_start
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        # Расчет процента от общего дохода
+        percentage = 0
+        if total_income > 0 and category_expense > 0:
+            percentage = (category_expense / total_income) * 100
+        
+        categories_data.append({
+            'id': category.id,
+            'name': category.name,
+            'icon': category.icon,
+            'color': category.color,
+            'expense_amount': float(category_expense),
+            'percentage': round(float(percentage), 1)
+        })
+    
+    return JsonResponse({"categories": categories_data})
