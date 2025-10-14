@@ -86,13 +86,16 @@ document.addEventListener("DOMContentLoaded", function() {
     initLogoAnimation();
     initTransactionModal();
     updateBalanceDisplay();
-    initTransactionFilter();
-    initCategoryTabs();
+    
+    // Инициализируем систему фильтрации
+    if (typeof initTransactionFilter === 'function') {
+        initTransactionFilter();
+    }
+    
     initTabNavigation();
     initCategoriesTab();
     initTransactionDeletion();
     initCategoryDeletion();
-    checkEmptyStates();
 
     // Форматируем все суммы на странице
     formatAllAmounts();
@@ -100,7 +103,6 @@ document.addEventListener("DOMContentLoaded", function() {
     // Загружаем актуальные категории при загрузке страницы
     updateGlobalCategories();
 });
-
 // =============================================
 // ОБНОВЛЕНИЕ БАЛАНСА
 // =============================================
@@ -381,9 +383,10 @@ function addTransactionToList(transaction) {
     
     // Скрываем пустое состояние если оно отображается
     const emptyStateAll = document.getElementById('emptyStateAll');
-    if (emptyStateAll && emptyStateAll.style.display !== 'none') {
-        emptyStateAll.style.display = 'none';
-    }
+    const emptyStateFiltered = document.getElementById('emptyStateFiltered');
+    
+    if (emptyStateAll) emptyStateAll.classList.add('hidden');
+    if (emptyStateFiltered) emptyStateFiltered.classList.add('hidden');
     
     // Форматируем дату
     const transactionDate = new Date(transaction.created_at);
@@ -429,7 +432,39 @@ function addTransactionToList(transaction) {
         // Добавляем в начало
         transactionsContainer.insertAdjacentHTML('afterbegin', transactionHTML);
     }
+    
+    // Обновляем состояние кнопки "Загрузить еще"
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    if (loadMoreContainer && loadMoreContainer.classList.contains('hidden')) {
+        // Проверяем, нужно ли показывать кнопку
+        checkIfHasMoreTransactionsAfterAdd();
+    }
 }
+
+
+
+// Функция для проверки наличия дополнительных транзакций после добавления
+async function checkIfHasMoreTransactionsAfterAdd() {
+    try {
+        // Используем текущие настройки фильтрации из history_sort.js
+        const currentFilter = window.currentFilter || 'week';
+        const currentCategory = window.currentCategory || 'all';
+        
+        const response = await fetch(`/get_transactions/?filter=${currentFilter}&page=2&limit=3&category=${currentCategory}`);
+        const data = await response.json();
+        
+        if (data.success && data.has_more) {
+            const loadMoreContainer = document.getElementById('loadMoreContainer');
+            if (loadMoreContainer) {
+                loadMoreContainer.classList.remove('hidden');
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка при проверке наличия транзакций:', error);
+    }
+}
+
+
 
 function resetTransactionForm() {
     const form = document.getElementById("transactionForm");
@@ -513,7 +548,14 @@ function loadCategories() {
 // ФИЛЬТРАЦИЯ ТРАНЗАКЦИЙ ПО КАТЕГОРИЯМ
 // =============================================
 
+// =============================================
+// ФИЛЬТРАЦИЯ ТРАНЗАКЦИЙ ПО КАТЕГОРИЯМ (ЛОКАЛЬНАЯ)
+// =============================================
+
 function initCategoryTabs() {
+    // Эта функция теперь используется только для локальной фильтрации
+    // когда система history_sort.js не активна (например, при начальной загрузке)
+    
     const tabs = document.querySelectorAll('.tab');
     const emptyStateAll = document.getElementById('emptyStateAll');
     const emptyStateFiltered = document.getElementById('emptyStateFiltered');
@@ -522,6 +564,13 @@ function initCategoryTabs() {
     if (emptyStateAll) emptyStateAll.style.display = 'none';
     if (emptyStateFiltered) emptyStateFiltered.style.display = 'none';
     
+    // Если система history_sort.js активна, не используем локальную фильтрацию
+    if (typeof window.loadTransactions === 'function') {
+        console.log('Используется система history_sort.js для фильтрации');
+        return;
+    }
+    
+    // Локальная фильтрация (только если history_sort.js не загружена)
     tabs.forEach(tab => {
         tab.addEventListener('click', function() {
             // Убираем активный класс у всех вкладок
@@ -580,6 +629,7 @@ function initCategoryTabs() {
         
         console.log(`Empty states - All: ${emptyStateAll?.style.display}, Filtered: ${emptyStateFiltered?.style.display}`);
     }
+
     
     // Инициализируем начальное состояние при загрузке
     const activeTab = document.querySelector('.tab.active');
@@ -1006,6 +1056,17 @@ document.addEventListener("DOMContentLoaded", function() {
 // ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
 // =============================================
 
+initTabNavigation
+
+// Функция для переинициализации системы фильтрации
+function reinitializeTransactionFilter() {
+    // Просто перезагружаем транзакции с текущими настройками
+    if (typeof window.loadTransactions === 'function') {
+        window.loadTransactions();
+    }
+}
+
+
 function initTabNavigation() {
     const navItems = document.querySelectorAll('.mobile-nav-item');
     const tabs = document.querySelectorAll('.mobile-tab');
@@ -1037,9 +1098,9 @@ function initTabNavigation() {
                 if (tabName === 'categories') {
                     loadUserCategories();
                 }
-                // Если переключаемся на главную, обновляем вкладки категорий
+                // Если переключаемся на главную, просто обновляем отображение
                 else if (tabName === 'home') {
-                    updateCategoryTabs();
+                    // Ничего не делаем - система фильтрации сама управляет контентом
                 }
             } else {
                 console.error('Вкладка не найдена: ', `tab-${tabName}`);
@@ -1047,6 +1108,7 @@ function initTabNavigation() {
         });
     });
 }
+
 
 // Инициализация при загрузке страницы
 document.addEventListener("DOMContentLoaded", function() {
@@ -1240,10 +1302,15 @@ async function processTransactionDeletion(transactionId, transactionElement, tra
             `;
             
             // Удаляем элемент через 1.5 секунды
-            setTimeout(() => {
-                transactionElement.remove();
-                checkEmptyStates();
-            }, 1500);
+           setTimeout(() => {
+    transactionElement.remove();
+    if (typeof window.checkEmptyStatesAfterChange === 'function') {
+        window.checkEmptyStatesAfterChange();
+    } else if (typeof window.checkEmptyStates === 'function') {
+        window.checkEmptyStates();
+    }
+}, 1500);
+
         } else {
             // В случае ошибки показываем сообщение и восстанавливаем элемент
             transactionElement.innerHTML = `

@@ -151,12 +151,12 @@
     <!-- Пустые состояния -->
     <div class="text-center py-8 text-gray-500 hidden" id="emptyStateAll">
         <i class="fas fa-receipt text-3xl mb-3"></i>
-        <p>Операций пока нет</p>
+        <p>Операций пока нет!</p>
     </div>
     
     <div class="text-center py-8 text-gray-500 hidden" id="emptyStateFiltered">
         <i class="fas fa-receipt text-3xl mb-3"></i>
-        <p>В этой категории операций пока нет</p>
+        <p>В этой категории пусто!</p>
     </div>
 </div>
             </div>
@@ -809,12 +809,19 @@ console.log('Инициализированы глобальные переме�
 
 
 
-// Скрываем пустое состояние для фильтрованных категорий при загрузке
+/* Скрываем пустое состояние для фильтрованных категорий при загрузке — через класс hidden */
 document.addEventListener("DOMContentLoaded", function() {
     const emptyStateFiltered = document.getElementById('emptyStateFiltered');
     if (emptyStateFiltered) {
-        emptyStateFiltered.style.display = 'none';
+        emptyStateFiltered.classList.add('hidden');
     }
+});
+
+// Делаем переменные фильтрации глобально доступными
+document.addEventListener("DOMContentLoaded", function() {
+    // Инициализация глобальных переменных для доступа из app.js
+    window.currentFilter = 'week';
+    window.currentCategory = 'all';
 });
 
 

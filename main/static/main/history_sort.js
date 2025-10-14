@@ -6,7 +6,7 @@ let currentFilter = 'week';
 let currentPage = 1;
 let hasMoreTransactions = true;
 let isLoading = false;
-let currentCategory = 'all'; // Добавляем текущую категорию
+let currentCategory = 'all';
 
 function initTransactionFilter() {
     const filterToggleBtn = document.getElementById('filterToggleBtn');
@@ -84,6 +84,7 @@ function updateCategoryTabsHandlers() {
     });
 }
 
+
 // Загрузка транзакций с учетом категории
 async function loadTransactions() {
     if (isLoading) return;
@@ -103,7 +104,7 @@ async function loadTransactions() {
     }
 
     try {
-        const response = await fetch(`/get_transactions/?filter=${currentFilter}&page=${currentPage}&limit=10&category=${currentCategory}`);
+        const response = await fetch(`/get_transactions/?filter=${currentFilter}&page=${currentPage}&limit=3&category=${currentCategory}`);
         const data = await response.json();
         
         if (data.success) {
@@ -130,9 +131,15 @@ async function loadTransactions() {
                 // Показываем пустое состояние если нет транзакций
                 if (currentPage === 1) {
                     showEmptyState();
-                }
-                if (loadMoreContainer) {
-                    loadMoreContainer.classList.add('hidden');
+                    // ДОБАВЛЕНО: Убедимся что кнопка "Загрузить еще" скрыта
+                    if (loadMoreContainer) {
+                        loadMoreContainer.classList.add('hidden');
+                    }
+                } else {
+                    // Если это не первая страница и нет транзакций, просто скрываем кнопку
+                    if (loadMoreContainer) {
+                        loadMoreContainer.classList.add('hidden');
+                    }
                 }
             }
             
@@ -154,7 +161,30 @@ async function loadTransactions() {
     } finally {
         isLoading = false;
     }
+
+
 }
+
+
+
+// Добавьте эту функцию в history_sort.js
+function checkEmptyStatesAfterChange() {
+    const transactionsContainer = document.getElementById('transactionsListContainer');
+    if (!transactionsContainer) return;
+    
+    // Считаем только реальные элементы транзакций (исключая сообщения об удалении и т.д.)
+    const transactionItems = transactionsContainer.querySelectorAll('.transaction-item');
+    const visibleTransactions = Array.from(transactionItems).filter(item => {
+        return !item.innerHTML.includes('Удалить?') && !item.innerHTML.includes('Удалено');
+    });
+    
+    if (visibleTransactions.length === 0) {
+        showEmptyState();
+    } else {
+        hideEmptyStates();
+    }
+}
+
 
 // Загрузка дополнительных транзакций
 async function loadMoreTransactions() {
@@ -235,15 +265,19 @@ function hideEmptyStates() {
 function showEmptyState() {
     const emptyStateAll = document.getElementById('emptyStateAll');
     const emptyStateFiltered = document.getElementById('emptyStateFiltered');
-    
+
+    // Сначала всё скрываем
+    if (emptyStateAll) emptyStateAll.classList.add('hidden');
+    if (emptyStateFiltered) emptyStateFiltered.classList.add('hidden');
+
+    // Проверяем, какая категория активна
     if (currentCategory === 'all') {
         if (emptyStateAll) emptyStateAll.classList.remove('hidden');
-        if (emptyStateFiltered) emptyStateFiltered.classList.add('hidden');
     } else {
-        if (emptyStateAll) emptyStateAll.classList.add('hidden');
         if (emptyStateFiltered) emptyStateFiltered.classList.remove('hidden');
     }
 }
+
 
 // Обновляем функцию после добавления транзакции
 function updateInterfaceAfterTransaction(data) {
@@ -264,3 +298,10 @@ function updateInterfaceAfterTransaction(data) {
         }
     }
 }
+
+// Делаем функции глобально доступными для app.js
+window.initTransactionFilter = initTransactionFilter;
+window.loadTransactions = loadTransactions;
+window.updateCategoryTabsHandlers = updateCategoryTabsHandlers;
+// Добавьте в конец history_sort.js
+window.checkEmptyStatesAfterChange = checkEmptyStatesAfterChange;

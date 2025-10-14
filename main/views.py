@@ -340,25 +340,20 @@ def change_password(request):
 def get_transactions(request):
     filter_type = request.GET.get('filter', 'week')
     page = int(request.GET.get('page', 1))
-    limit = int(request.GET.get('limit', 3))
+    limit = int(request.GET.get('limit', 10))
     category_id = request.GET.get('category', 'all')
     
-    # Определяем период фильтрации - УЛУЧШЕННАЯ ВЕРСИЯ
+    # Определяем период фильтрации
     now = timezone.now()
     if filter_type == 'day':
-        # Начало текущего дня (00:00:00)
         start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
     elif filter_type == 'week':
-        # Начало текущей недели (понедельник 00:00:00)
         start_date = now - timedelta(days=now.weekday())
         start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
     elif filter_type == 'month':
-        # Начало текущего месяца (1 число 00:00:00)
         start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     else:
         start_date = None
-    
-    print(f"Фильтр: {filter_type}, Начальная дата: {start_date}")
     
     # Получаем транзакции
     transactions = Transaction.objects.filter(user=request.user)
@@ -370,23 +365,26 @@ def get_transactions(request):
     # Фильтруем по дате если выбран период
     if start_date:
         transactions = transactions.filter(created_at__gte=start_date)
-        print(f"Транзакции с: {start_date}")
     
-    count_before = transactions.count()
     transactions = transactions.order_by('-created_at')
     
-    print(f"Всего транзакций после фильтрации: {count_before}")
-    
-    # Пагинация
+    # Пагинация с обработкой ошибок
     paginator = Paginator(transactions, limit)
     try:
         page_obj = paginator.page(page)
     except EmptyPage:
+        # Если страница не существует, возвращаем пустой список
         return JsonResponse({
             'success': True,
             'transactions': [],
             'has_more': False
         })
+    except Exception as e:
+        # Обработка других ошибок
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
     
     transactions_data = []
     for transaction in page_obj:
