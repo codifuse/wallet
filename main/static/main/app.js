@@ -788,25 +788,30 @@ async function saveCategory() {
         
         const data = await response.json();
         
-        if (data.success) {
-            document.getElementById('categoryModal').classList.add('hidden');
-            nameInput.value = '';
-            
-            // Сбрасываем выделение иконки и цвета
-            document.querySelectorAll('.icon-option').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white');
-                btn.classList.add('bg-gray-700', 'text-gray-300');
-            });
-            document.querySelectorAll('.color-option').forEach(btn => {
-                btn.classList.remove('border-white', 'border-2');
-            });
-            
-            // ОБНОВЛЯЕМ ВСЕ СПИСКИ КАТЕГОРИЙ
-            await loadUserCategories(); // для вкладки категорий
-            await updateGlobalCategories(); // для главной страницы и модалки транзакций
-            await updateCategoryTabs(); // для вкладок на главной
-            
-            showSuccessNotification('Категория добавлена!');
+ if (data.success) {
+        document.getElementById('categoryModal').classList.add('hidden');
+        nameInput.value = '';
+        
+        // Сбрасываем выделение иконки и цвета
+        document.querySelectorAll('.icon-option').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-700', 'text-gray-300');
+        });
+        document.querySelectorAll('.color-option').forEach(btn => {
+            btn.classList.remove('border-white', 'border-2');
+        });
+        
+        // ОБНОВЛЯЕМ ВСЕ СПИСКИ КАТЕГОРИЙ
+        await loadUserCategories(); // для вкладки категорий
+        await updateGlobalCategories(); // для главной страницы и модалки транзакций
+        await updateCategoryTabs(); // для вкладок на главной
+        
+        // ОБНОВЛЯЕМ ТЕКУЩИЕ ПЕРЕМЕННЫЕ ФИЛЬТРАЦИИ
+        if (typeof window.currentCategory !== 'undefined') {
+            window.currentCategory = 'all'; // Сбрасываем на "Все" после добавления категории
+        }
+        
+        showSuccessNotification('Категория добавлена!');
         } else {
             alert(data.error || "Ошибка при сохранении категории");
         }
@@ -968,7 +973,7 @@ async function processCategoryDeletion(categoryId, categoryElement) {
                         <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
                             <i class="fas fa-exclamation-circle text-red-400"></i>
                         </div>
-                        <span class="text-red-400 font-medium">Ошибка</span>
+                        <span class="text-red-400 font-medium">Ошибка! Категория содержит записи!</span>
                     </div>
                 </div>
             `;
@@ -1154,6 +1159,10 @@ async function updateCategoryTabs() {
             const tabsWrapper = document.getElementById('tabsWrapper');
             if (!tabsWrapper) return;
             
+            // Сохраняем активную вкладку
+            const activeTab = tabsWrapper.querySelector('.tab.active');
+            const activeCategory = activeTab ? activeTab.dataset.category : 'all';
+            
             // Сохраняем вкладку "Все"
             const allTab = tabsWrapper.querySelector('.tab[data-category="all"]');
             tabsWrapper.innerHTML = '';
@@ -1165,11 +1174,22 @@ async function updateCategoryTabs() {
                 tab.className = 'tab';
                 tab.dataset.category = cat.id;
                 tab.innerHTML = `<span>${cat.name}</span>`;
+                
+                // Восстанавливаем активное состояние
+                if (cat.id == activeCategory) {
+                    tab.classList.add('active');
+                }
+                
                 tabsWrapper.appendChild(tab);
             });
             
             // Переинициализируем обработчики событий для вкладок
-            initCategoryTabs();
+            if (typeof window.updateCategoryTabsHandlers === 'function') {
+                window.updateCategoryTabsHandlers();
+            } else {
+                // Fallback на локальную инициализацию
+                initCategoryTabs();
+            }
         }
     } catch (error) {
         console.error('Ошибка при обновлении вкладок категорий:', error);
@@ -1528,3 +1548,5 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }, { passive: false });
 });
+
+

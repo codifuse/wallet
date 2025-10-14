@@ -66,14 +66,22 @@ function initTransactionFilter() {
     }, 500);
 }
 
-// Обновляем обработчики вкладок
+/// Обновляем обработчики вкладок
 function updateCategoryTabsHandlers() {
     const tabs = document.querySelectorAll('.tab');
     
     tabs.forEach(tab => {
+        // Удаляем старые обработчики
+        tab.replaceWith(tab.cloneNode(true));
+    });
+    
+    // Получаем обновленные элементы
+    const updatedTabs = document.querySelectorAll('.tab');
+    
+    updatedTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             // Убираем активный класс у всех вкладок
-            tabs.forEach(t => t.classList.remove('active'));
+            updatedTabs.forEach(t => t.classList.remove('active'));
             // Добавляем активный класс текущей вкладке
             this.classList.add('active');
             
@@ -86,8 +94,9 @@ function updateCategoryTabsHandlers() {
             loadTransactions();
         });
     });
+    
+    console.log('Обработчики вкладок переинициализированы');
 }
-
 
 // Загрузка транзакций с учетом категории
 async function loadTransactions() {
@@ -362,9 +371,16 @@ async function updateInterfaceAfterTransaction(data) {
 }
 
 
+// Функция для принудительного обновления вкладок извне
+function refreshCategoryTabs() {
+    if (typeof window.updateCategoryTabsHandlers === 'function') {
+        window.updateCategoryTabsHandlers();
+    }
+}
+
 // Делаем функции глобально доступными для app.js
 window.initTransactionFilter = initTransactionFilter;
 window.loadTransactions = loadTransactions;
 window.updateCategoryTabsHandlers = updateCategoryTabsHandlers;
-// Добавьте в конец history_sort.js
+window.refreshCategoryTabs = refreshCategoryTabs;
 window.checkEmptyStatesAfterChange = checkEmptyStatesAfterChange;
