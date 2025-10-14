@@ -8,6 +8,10 @@ let hasMoreTransactions = true;
 let isLoading = false;
 let currentCategory = 'all';
 
+// Лимит количества транзакций на одну страницу (должен совпадать с параметром limit в fetch)
+const PAGE_SIZE = 10;
+
+
 function initTransactionFilter() {
     const filterToggleBtn = document.getElementById('filterToggleBtn');
     const filterDropdown = document.getElementById('filterDropdown');
@@ -88,11 +92,11 @@ function updateCategoryTabsHandlers() {
 // Загрузка транзакций с учетом категории
 async function loadTransactions() {
     if (isLoading) return;
-    
+
     isLoading = true;
     const transactionsContainer = document.getElementById('transactionsListContainer');
     const loadMoreContainer = document.getElementById('loadMoreContainer');
-    
+
     // Показываем индикатор загрузки
     if (currentPage === 1) {
         transactionsContainer.innerHTML = `
@@ -104,49 +108,73 @@ async function loadTransactions() {
     }
 
     try {
-        const response = await fetch(`/get_transactions/?filter=${currentFilter}&page=${currentPage}&limit=3&category=${currentCategory}`);
-        const data = await response.json();
+        const resp = await fetch(`/get_transactions/?filter=${currentFilter}&page=${currentPage}&limit=${PAGE_SIZE}&category=${currentCategory}`);
         
+        if (!resp.ok) {
+            // Сервер вернул ошибку (например 500) — не парсим JSON
+            console.error('Server error when fetching transactions:', resp.status, resp.statusText);
+            if (currentPage === 1) {
+                transactionsContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Ошибка загрузки (сервер вернул ${resp.status}).</p>
+                    </div>
+                `;
+            }
+            hasMoreTransactions = false;
+            if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+            return;
+        }
+
+        const data = await resp.json();
+
         if (data.success) {
             // Очищаем контейнер при первой загрузке
             if (currentPage === 1) {
                 transactionsContainer.innerHTML = '';
             }
-            
+
             // Добавляем транзакции
             if (data.transactions && data.transactions.length > 0) {
                 data.transactions.forEach(transaction => {
                     addTransactionToList(transaction, false);
                 });
-                
-                // Показываем/скрываем кнопку "Загрузить еще"
-                hasMoreTransactions = data.has_more;
+
+                // Используем флаг с сервера
+                hasMoreTransactions = !!data.has_more;
                 if (loadMoreContainer) {
                     loadMoreContainer.classList.toggle('hidden', !hasMoreTransactions);
                 }
-                
-                // Скрываем пустые состояния
+
                 hideEmptyStates();
             } else {
-                // Показываем пустое состояние если нет транзакций
+                // Нет транзакций
                 if (currentPage === 1) {
+                    transactionsContainer.innerHTML = '';
                     showEmptyState();
-                    // ДОБАВЛЕНО: Убедимся что кнопка "Загрузить еще" скрыта
-                    if (loadMoreContainer) {
-                        loadMoreContainer.classList.add('hidden');
-                    }
+                    if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
                 } else {
-                    // Если это не первая страница и нет транзакций, просто скрываем кнопку
-                    if (loadMoreContainer) {
-                        loadMoreContainer.classList.add('hidden');
-                    }
+                    if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
                 }
+                hasMoreTransactions = false;
             }
-            
-            // Обновляем счетчик страниц
+
+            // Увеличиваем страницу только если есть еще
             if (hasMoreTransactions) {
                 currentPage++;
             }
+        } else {
+            console.error('API returned success:false for transactions:', data);
+            if (currentPage === 1) {
+                transactionsContainer.innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Ошибка загрузки данных</p>
+                    </div>
+                `;
+            }
+            if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+            hasMoreTransactions = false;
         }
     } catch (error) {
         console.error('Ошибка при загрузке транзакций:', error);
@@ -158,12 +186,22 @@ async function loadTransactions() {
                 </div>
             `;
         }
+        if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+        hasMoreTransactions = false;
     } finally {
         isLoading = false;
     }
 
-
+    // Контроль видимости кнопки "Загрузить еще" (на случай, если сервер не дал has_more)
+    if (loadMoreContainer) {
+        if (hasMoreTransactions) {
+            loadMoreContainer.classList.remove('hidden');
+        } else {
+            loadMoreContainer.classList.add('hidden');
+        }
+    }
 }
+
 
 
 
@@ -280,24 +318,49 @@ function showEmptyState() {
 
 
 // Обновляем функцию после добавления транзакции
-function updateInterfaceAfterTransaction(data) {
+// Обновляем функцию после добавления транзакции
+async function updateInterfaceAfterTransaction(data) {
     // 1. Обновляем балансы
     updateBalancesAfterTransaction(data.transaction_type, data.amount);
-    
+
     // 2. Если активна категория "Все" или категория новой транзакции, добавляем ее
     if (currentCategory === 'all' || currentCategory == data.transaction.category_id) {
         addTransactionToList(data.transaction, true);
-        
+
         // 3. Скрываем пустые состояния
         hideEmptyStates();
-        
-        // 4. Показываем кнопку "Загрузить еще" если она была скрыта
+
+        // 4. Проверяем на сервере, есть ли дополнительные транзакции (страница 2)
         const loadMoreContainer = document.getElementById('loadMoreContainer');
-        if (loadMoreContainer && loadMoreContainer.classList.contains('hidden')) {
-            loadMoreContainer.classList.remove('hidden');
+        try {
+            const resp = await fetch(`/get_transactions/?filter=${currentFilter}&page=2&limit=${PAGE_SIZE}&category=${currentCategory}`);
+            if (resp.ok) {
+                const info = await resp.json();
+                // Показываем кнопку только если сервер говорит, что есть ещё
+                if (info.success && info.has_more) {
+                    loadMoreContainer.classList.remove('hidden');
+                    hasMoreTransactions = true;
+                } else if (info.success && info.transactions && info.transactions.length > 0) {
+                    // На всякий случай — если сервер не заполнил has_more, но есть элементы
+                    loadMoreContainer.classList.remove('hidden');
+                    hasMoreTransactions = true;
+                } else {
+                    loadMoreContainer.classList.add('hidden');
+                    hasMoreTransactions = false;
+                }
+            } else {
+                // При ошибке сервера — прячем кнопку (безопасный вариант)
+                loadMoreContainer.classList.add('hidden');
+                hasMoreTransactions = false;
+            }
+        } catch (err) {
+            console.error('Ошибка проверки наличия дополнительных транзакций:', err);
+            loadMoreContainer.classList.add('hidden');
+            hasMoreTransactions = false;
         }
     }
 }
+
 
 // Делаем функции глобально доступными для app.js
 window.initTransactionFilter = initTransactionFilter;
