@@ -11,6 +11,7 @@ from django.core.cache import cache
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User 
+from django.core.paginator import Paginator
 
 def create_default_categories(user):
     """Создает категории по умолчанию для пользователя"""
@@ -334,3 +335,75 @@ def change_password(request):
             return JsonResponse({"success": False, "error": f"Ошибка при смене пароля: {str(e)}"})
     
     return JsonResponse({"success": False, "error": "Неверный метод запроса"})
+
+
+def get_transactions(request):
+    filter_type = request.GET.get('filter', 'week')
+    page = int(request.GET.get('page', 1))
+    limit = int(request.GET.get('limit', 3))
+    category_id = request.GET.get('category', 'all')
+    
+    # Определяем период фильтрации - УЛУЧШЕННАЯ ВЕРСИЯ
+    now = timezone.now()
+    if filter_type == 'day':
+        # Начало текущего дня (00:00:00)
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_type == 'week':
+        # Начало текущей недели (понедельник 00:00:00)
+        start_date = now - timedelta(days=now.weekday())
+        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif filter_type == 'month':
+        # Начало текущего месяца (1 число 00:00:00)
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        start_date = None
+    
+    print(f"Фильтр: {filter_type}, Начальная дата: {start_date}")
+    
+    # Получаем транзакции
+    transactions = Transaction.objects.filter(user=request.user)
+    
+    # Фильтруем по категории если выбрана конкретная
+    if category_id != 'all':
+        transactions = transactions.filter(category_id=category_id)
+    
+    # Фильтруем по дате если выбран период
+    if start_date:
+        transactions = transactions.filter(created_at__gte=start_date)
+        print(f"Транзакции с: {start_date}")
+    
+    count_before = transactions.count()
+    transactions = transactions.order_by('-created_at')
+    
+    print(f"Всего транзакций после фильтрации: {count_before}")
+    
+    # Пагинация
+    paginator = Paginator(transactions, limit)
+    try:
+        page_obj = paginator.page(page)
+    except EmptyPage:
+        return JsonResponse({
+            'success': True,
+            'transactions': [],
+            'has_more': False
+        })
+    
+    transactions_data = []
+    for transaction in page_obj:
+        transactions_data.append({
+            'id': transaction.id,
+            'amount': float(transaction.amount),
+            'type': transaction.type,
+            'description': transaction.description,
+            'created_at': transaction.created_at.isoformat(),
+            'category_id': transaction.category.id,
+            'category_name': transaction.category.name,
+            'category_icon': transaction.category.icon,
+            'category_color': transaction.category.color,
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'transactions': transactions_data,
+        'has_more': page_obj.has_next()
+    })

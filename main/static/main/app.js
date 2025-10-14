@@ -86,13 +86,14 @@ document.addEventListener("DOMContentLoaded", function() {
     initLogoAnimation();
     initTransactionModal();
     updateBalanceDisplay();
+    initTransactionFilter();
     initCategoryTabs();
     initTabNavigation();
     initCategoriesTab();
     initTransactionDeletion();
     initCategoryDeletion();
     checkEmptyStates();
-    
+
     // Форматируем все суммы на странице
     formatAllAmounts();
     

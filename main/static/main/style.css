@@ -32,13 +32,24 @@ body {
     box-sizing: border-box;
 }
 
-/* Основной контент - теперь flex и скроллится */
+/* ПЕРЕОПРЕДЕЛЯЕМ ШИРИНУ КОНТЕНТА */
 .mobile-content {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 1rem;
-    padding-bottom: 80px; /* Место для нижней навигации */
+    padding: 1rem 0.25rem !important;
+    padding-bottom: 80px !important;
+    max-width: none !important;
+    margin-bottom: 1rem !important;
+    width: 100% !important;
+}
+
+/* Делаем карточки шире */
+.card-gradient {
+ margin-bottom: 1rem !important;
+}
+
+/* Убираем отступы у секций */
+.mobile-section {
+margin-bottom: 1rem !important;
+padding: 0 0.25rem !important;
 }
 
 /* Нижняя навигация - фиксированная */
@@ -1115,3 +1126,29 @@ body {
     }
 }
 
+/* Стили для фильтра и пагинации */
+#filterToggleBtn {
+    transition: all 0.3s ease;
+}
+
+#filterDropdown {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.filter-option:first-child {
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.filter-option:last-child {
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+
+#loadMoreBtn {
+    transition: all 0.3s ease;
+}
+
+#loadMoreBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -31,4 +31,5 @@ urlpatterns = [
     path('get_categories/', views.get_categories, name='get_categories'),
      path('delete_transaction/<int:transaction_id>/', views.delete_transaction, name='delete_transaction'), 
      path('change_password/', views.change_password, name='change_password'),
+     path('get_transactions/', views.get_transactions, name='get_transactions'),
 ]
