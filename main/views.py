@@ -13,6 +13,9 @@ from datetime import timedelta
 from django.contrib.auth.models import User 
 from django.core.paginator import Paginator
 
+from django.db.models import Sum, Count, Q
+
+
 def create_default_categories(user):
     """Создает категории по умолчанию для пользователя"""
     default_categories = [
@@ -410,7 +413,6 @@ def get_transactions(request):
 def get_categories_with_stats(request):
     categories = Category.objects.filter(user=request.user)
     
-    # Получаем общий доход за текущий месяц
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     
@@ -428,19 +430,22 @@ def get_categories_with_stats(request):
             category=category,
             type='expense',
             created_at__gte=month_start
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-        
+        )
+        total_expense = category_expense.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        transaction_count = category_expense.count()
+
         # Расчет процента от общего дохода
         percentage = 0
-        if total_income > 0 and category_expense > 0:
-            percentage = (category_expense / total_income) * 100
+        if total_income > 0 and total_expense > 0:
+            percentage = (total_expense / total_income) * 100
         
         categories_data.append({
             'id': category.id,
             'name': category.name,
             'icon': category.icon,
             'color': category.color,
-            'expense_amount': float(category_expense),
+            'expense_amount': float(total_expense),
+            'transaction_count': transaction_count,
             'percentage': round(float(percentage), 1)
         })
     

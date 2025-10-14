@@ -47,7 +47,6 @@
     <div class="app-container">
 <!-- Верхний бар с балансом -->
 <div class="mobile-header">
-
     <div class="flex justify-between items-center mb-4 relative">
         <!-- Логотип -->
         <div class="flex items-center relative flex-shrink-0">
@@ -66,17 +65,68 @@
         </div>
     </div>
 
-    <!-- Основной баланс -->
-    <div class="text-center pt-4 pb-1">
-        <p class="text-4xl font-bold mb-1" id="totalBalance">{{ total|floatformat:0 }} с</p>
-        <div class="flex justify-center gap-6 text-sm">
+    <!-- Основной баланс - ОБНОВЛЕННЫЙ ДИЗАЙН -->
+    <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-2xl p-5 mb-2 border border-blue-800/30 shadow-lg">
+        <div class="flex justify-between items-start">
+            <!-- Левая часть - Основной баланс -->
             <div>
-                <p class="text-gray-400 text-xl">Доходы</p>
-                <p class="income font-medium text-xl" id="monthIncome">{{ income|floatformat:0 }} с</p>
+                <p class="text-sm text-gray-300 mb-1">Текущий баланс</p>
+                <p class="text-3xl font-bold">
+                    <span id="totalBalance">{{ total|floatformat:0 }}</span> 
+                    <span class="currency-symbol text-xl ml-1">с</span>
+                </p>
+                <div class="flex items-center mt-2 space-x-4">
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-xs text-gray-300">Доходы</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                        <span class="text-xs text-gray-300">Расходы</span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <p class="text-gray-400 text-xl">Расходы</p>
-                <p class="expense font-medium text-xl" id="monthExpense">{{ expense|floatformat:0 }} с</p>
+            
+           <!-- Правая часть - Доходы/Расходы -->
+<div class="text-right">
+   <p class="text-sm text-gray-300 mb-1">Резерв</p>
+<p class="text-xl font-bold text-blue-400">
+    +<span id="reserveAmount">0</span>
+    <span class="currency-symbol text-sm ml-1">с</span>
+</p>
+
+                
+                <!-- Детализация доходов/расходов -->
+                <div class="mt-3 space-y-1">
+                    <div class="flex items-center justify-end">
+                        <span class="text-green-400 text-xs mr-2">+</span>
+                        <span class="income text-sm font-medium" id="monthIncome">{{ income|floatformat:0 }} с</span>
+                    </div>
+                    <div class="flex items-center justify-end">
+                        <span class="text-red-400 text-xs mr-2">-</span>
+                        <span class="expense text-sm font-medium" id="monthExpense">{{ expense|floatformat:0 }} с</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Прогресс-бар для визуализации соотношения доходов/расходов -->
+        <div class="mt-4">
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+                <span>Доходы</span>
+                <span>Расходы</span>
+            </div>
+            <div class="w-full bg-gray-700/50 rounded-full h-2">
+                {% if income > 0 or expense > 0 %}
+                <div class="flex h-2 rounded-full">
+                    <div class="bg-green-500 h-2 rounded-l-full" 
+                         style="width: {% widthratio income income|add:expense 100 %}%"></div>
+                    <div class="bg-red-500 h-2 rounded-r-full" 
+                         style="width: {% widthratio expense income|add:expense 100 %}%"></div>
+                </div>
+                {% else %}
+                <div class="bg-gray-600 h-2 rounded-full"></div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -184,63 +234,217 @@
     </div>
 </div>
 
-        <!-- Статистика вкладка -->
-        <div class="mobile-tab" id="tab-stats">
-            <div class="mobile-section">
-                <div class="card-gradient rounded-2xl p-4 mb-4">
-                    <h2 class="text-lg font-bold mb-3">Статистика</h2>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <p class="text-gray-400 text-sm">За неделю</p>
-                            <div class="flex justify-between mt-1">
-                                <span class="income">+ <span id="weekIncome">0</span> <span class="currency-symbol">с</span></span>
-                                <span class="expense">- <span id="weekExpense">0</span> <span class="currency-symbol">с</span></span>
-                            </div>
+      <!-- Статистика вкладка -->
+<div class="mobile-tab" id="tab-stats">
+    <div class="mobile-section">
+        <!-- Периоды фильтрации -->
+        <div class="card-gradient rounded-2xl p-4 mb-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">Статистика</h2>
+                <div class="relative">
+                    <select id="periodSelect" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1 text-sm appearance-none pr-8">
+                        <option value="week">Неделя</option>
+                        <option value="month" selected>Месяц</option>
+                        <option value="year">Год</option>
+                    </select>
+                    <div class="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- График доходов/расходов -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-medium text-gray-300">Динамика</h3>
+                    <div class="flex space-x-2">
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                            <span class="text-xs text-gray-400">Доходы</span>
                         </div>
-                        
-                        <div>
-                            <p class="text-gray-400 text-sm">За месяц</p>
-                            <div class="flex justify-between mt-1">
-                                <span class="income">+ <span id="monthIncomeStat">0</span> <span class="currency-symbol">с</span></span>
-                                <span class="expense">- <span id="monthExpenseStat">0</span> <span class="currency-symbol">с</span></span>
-                            </div>
-                        </div>
-                        
-                        <div class="pt-4 border-t border-gray-700">
-                            <p class="text-gray-400 text-sm">Самые частые категории</p>
-                            <div class="mt-2 space-y-2" id="topCategories">
-                                <!-- Топ категории будут здесь -->
-                            </div>
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
+                            <span class="text-xs text-gray-400">Расходы</span>
                         </div>
                     </div>
                 </div>
+                <div class="h-32 bg-gray-800/50 rounded-xl p-3 flex items-end justify-between" id="chartContainer">
+                    <!-- График будет генерироваться JavaScript -->
+                    <div class="flex items-end justify-between w-full" id="chartBars">
+                        <!-- Барчики графика -->
+                        <div class="flex flex-col items-center w-1/5">
+                            <div class="w-3/4 bg-green-500 rounded-t mb-1" style="height: 40%"></div>
+                            <div class="w-3/4 bg-red-500 rounded-t" style="height: 25%"></div>
+                            <span class="text-xs text-gray-400 mt-1">Пн</span>
+                        </div>
+                        <div class="flex flex-col items-center w-1/5">
+                            <div class="w-3/4 bg-green-500 rounded-t mb-1" style="height: 60%"></div>
+                            <div class="w-3/4 bg-red-500 rounded-t" style="height: 45%"></div>
+                            <span class="text-xs text-gray-400 mt-1">Вт</span>
+                        </div>
+                        <div class="flex flex-col items-center w-1/5">
+                            <div class="w-3/4 bg-green-500 rounded-t mb-1" style="height: 30%"></div>
+                            <div class="w-3/4 bg-red-500 rounded-t" style="height: 55%"></div>
+                            <span class="text-xs text-gray-400 mt-1">Ср</span>
+                        </div>
+                        <div class="flex flex-col items-center w-1/5">
+                            <div class="w-3/4 bg-green-500 rounded-t mb-1" style="height: 70%"></div>
+                            <div class="w-3/4 bg-red-500 rounded-t" style="height: 35%"></div>
+                            <span class="text-xs text-gray-400 mt-1">Чт</span>
+                        </div>
+                        <div class="flex flex-col items-center w-1/5">
+                            <div class="w-3/4 bg-green-500 rounded-t mb-1" style="height: 50%"></div>
+                            <div class="w-3/4 bg-red-500 rounded-t" style="height: 65%"></div>
+                            <span class="text-xs text-gray-400 mt-1">Пт</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Сводка по периодам -->
+            <div class="grid grid-cols-2 gap-4 mb-2">
+                <div class="bg-gray-800/40 rounded-xl p-3">
+                    <div class="flex items-center mb-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-300">Доходы</span>
+                    </div>
+                    <div class="text-xl font-bold">
+                        +<span id="monthIncomeStat">0</span> <span class="currency-symbol text-sm">с</span>
+                    </div>
+                    <div class="text-xs text-green-400 flex items-center mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        <span>+12% с прошлого месяца</span>
+                    </div>
+                </div>
                 
-                <!-- Быстрые действия -->
-                <div class="card-gradient rounded-2xl p-4">
-                    <h2 class="text-lg font-bold mb-3">Быстрые действия</h2>
-                    
-                    <div class="grid grid-cols-2 gap-3">
-                        <button class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg transition-colors flex flex-col items-center justify-center" id="exportBtn">
-                            <i class="fas fa-file-export text-blue-400 text-lg mb-1"></i>
-                            <span class="text-xs">Экспорт</span>
-                        </button>
-                        <button class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg transition-colors flex flex-col items-center justify-center" id="importBtn">
-                            <i class="fas fa-file-import text-green-400 text-lg mb-1"></i>
-                            <span class="text-xs">Импорт</span>
-                        </button>
-                        <button class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg transition-colors flex flex-col items-center justify-center" id="clearDataBtn">
-                            <i class="fas fa-trash text-red-400 text-lg mb-1"></i>
-                            <span class="text-xs">Очистить</span>
-                        </button>
-                        <a href="https://t.me/codifuse" class="bg-gray-800 hover:bg-gray-700 py-3 rounded-lg transition-colors flex flex-col items-center justify-center">
-                            <i class="fa-brands fa-telegram text-blue-400 text-lg mb-1"></i>
-                            <span class="text-xs">Поддержка</span>
-                        </a>
+                <div class="bg-gray-800/40 rounded-xl p-3">
+                    <div class="flex items-center mb-2">
+                        <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-300">Расходы</span>
+                    </div>
+                    <div class="text-xl font-bold">
+                        -<span id="monthExpenseStat">0</span> <span class="currency-symbol text-sm">с</span>
+                    </div>
+                    <div class="text-xs text-red-400 flex items-center mt-1">
+                        <i class="fas fa-arrow-up mr-1"></i>
+                        <span>+5% с прошлого месяца</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Баланс -->
+            <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-4 border border-blue-800/30">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-300">Текущий баланс</p>
+                        <p class="text-2xl font-bold mt-1">
+                            <span id="currentBalance">0</span> <span class="currency-symbol text-lg">с</span>
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-300">Мой резерв</p>
+                        <p class="text-lg font-bold text-green-400 mt-1">
+                            +<span id="reserveAmountStat">0</span> <span class="currency-symbol text-sm">с</span>
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Топ категории -->
+        <div class="card-gradient rounded-2xl p-4 mb-4">
+            <h2 class="text-lg font-bold mb-4">Топ категории</h2>
+            
+            <div class="space-y-3" id="topCategories">
+                <!-- Категория 1 -->
+                <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center mr-3">
+                            <i class="fas fa-utensils text-red-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Еда</p>
+                            <p class="text-xs text-gray-400">12 транзакций</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-red-400">-2,450 <span class="currency-symbol text-xs">с</span></p>
+                        <p class="text-xs text-gray-400">35% расходов</p>
+                    </div>
+                </div>
+                
+                <!-- Категория 2 -->
+                <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mr-3">
+                            <i class="fas fa-shopping-cart text-blue-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Покупки</p>
+                            <p class="text-xs text-gray-400">8 транзакций</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-red-400">-1,780 <span class="currency-symbol text-xs">с</span></p>
+                        <p class="text-xs text-gray-400">25% расходов</p>
+                    </div>
+                </div>
+                
+                <!-- Категория 3 -->
+                <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl">
+                    <div class="flex items-center">
+                        <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mr-3">
+                            <i class="fas fa-wallet text-green-400"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium">Зарплата</p>
+                            <p class="text-xs text-gray-400">1 транзакция</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-green-400">+15,000 <span class="currency-symbol text-xs">с</span></p>
+                        <p class="text-xs text-gray-400">100% доходов</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Быстрые действия -->
+        <div class="card-gradient rounded-2xl p-4">
+            <h2 class="text-lg font-bold mb-4">Быстрые действия</h2>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <button class="bg-gray-800 hover:bg-gray-700 py-4 rounded-xl transition-all duration-200 flex flex-col items-center justify-center group hover:scale-105" id="exportBtn">
+                    <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center mb-2 group-hover:bg-blue-500/30 transition-colors">
+                        <i class="fas fa-file-export text-blue-400 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-medium">Экспорт</span>
+                </button>
+                
+                <button class="bg-gray-800 hover:bg-gray-700 py-4 rounded-xl transition-all duration-200 flex flex-col items-center justify-center group hover:scale-105" id="importBtn">
+                    <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center mb-2 group-hover:bg-green-500/30 transition-colors">
+                        <i class="fas fa-file-import text-green-400 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-medium">Импорт</span>
+                </button>
+                
+                <button class="bg-gray-800 hover:bg-gray-700 py-4 rounded-xl transition-all duration-200 flex flex-col items-center justify-center group hover:scale-105" id="clearDataBtn">
+                    <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center mb-2 group-hover:bg-red-500/30 transition-colors">
+                        <i class="fas fa-trash text-red-400 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-medium">Очистить</span>
+                </button>
+                
+                <a href="https://t.me/codifuse" class="bg-gray-800 hover:bg-gray-700 py-4 rounded-xl transition-all duration-200 flex flex-col items-center justify-center group hover:scale-105">
+                    <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center mb-2 group-hover:bg-blue-500/30 transition-colors">
+                        <i class="fa-brands fa-telegram text-blue-400 text-xl"></i>
+                    </div>
+                    <span class="text-sm font-medium">Поддержка</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
         
         <!-- Заметки вкладка -->
         <div class="mobile-tab" id="tab-notes">
@@ -554,7 +758,46 @@
         </div>
       </div>
       
+<!-- Настройка процента резерва -->
+<div class="bg-gray-700/60 rounded-xl p-4 mb-6 border border-gray-600/50">
+  <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center space-x-2">
+      <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+        <i class="fas fa-piggy-bank text-blue-400 text-sm"></i>
+      </div>
+      <h3 class="text-base font-semibold text-gray-200">Резерв</h3>
+    </div>
+    <span id="currentReservePercent" class="text-sm text-blue-400 font-medium">
       
+    </span>
+  </div>
+
+  <p class="text-sm text-gray-400 mb-3">
+    Укажите, сколько процентов от доходов автоматически откладывать в резерв.
+  </p>
+
+  <div class="flex items-center space-x-3">
+    <input
+      type="number"
+      id="reservePercentageInput"
+      min="0"
+      max="100"
+      class="w-24 bg-gray-800 border border-gray-700 rounded-lg p-2 text-center text-white text-lg font-semibold focus:border-blue-500 focus:ring-0 outline-none transition-all"
+      value="10"
+    >
+    <button
+      id="saveReserveBtn"
+      class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all"
+    >
+      <i class="fas fa-save mr-2"></i>Сохранить
+    </button>
+
+
+  </div>
+</div>
+
+
+
       <!-- Кнопка закрыть -->
       <button onclick="toggleMenuModal()" class="mt-6 w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-medium transition-colors">
         Закрыть

@@ -86,6 +86,8 @@ document.addEventListener("DOMContentLoaded", function() {
     initLogoAnimation();
     initTransactionModal();
     updateBalanceDisplay();
+    updateStatsSection();
+    updateTopCategories();
     
     // Инициализируем систему фильтрации
     if (typeof initTransactionFilter === 'function') {
@@ -117,6 +119,8 @@ function updateBalanceDisplay() {
     if (totalElement) totalElement.textContent = window.initialBalances.total + ' с';
     if (incomeElement) incomeElement.textContent = window.initialBalances.income + ' с';
     if (expenseElement) expenseElement.textContent = window.initialBalances.expense + ' с';
+    updateReserveDisplay();
+
 }
 
 // =============================================
@@ -1087,6 +1091,7 @@ function reinitializeTransactionFilter() {
 function initTabNavigation() {
     const navItems = document.querySelectorAll('.mobile-nav-item');
     const tabs = document.querySelectorAll('.mobile-tab');
+    const balanceBlock = document.querySelector('.mobile-header .bg-gradient-to-r'); // Блок баланса
 
     navItems.forEach(item => {
         item.addEventListener('click', function() {
@@ -1106,18 +1111,22 @@ function initTabNavigation() {
                 tab.classList.remove('active');
             });
 
+            // Управляем отображением баланса
+            if (balanceBlock) {
+                if (tabName === 'home') {
+                    balanceBlock.classList.remove('hidden');
+                } else {
+                    balanceBlock.classList.add('hidden');
+                }
+            }
+
             // Показываем выбранную вкладку
             const activeTab = document.getElementById(`tab-${tabName}`);
             if (activeTab) {
                 activeTab.classList.add('active');
                 
-                // Если переключаемся на вкладку категорий, загружаем категории
                 if (tabName === 'categories') {
                     loadUserCategories();
-                }
-                // Если переключаемся на главную, просто обновляем отображение
-                else if (tabName === 'home') {
-                    // Ничего не делаем - система фильтрации сама управляет контентом
                 }
             } else {
                 console.error('Вкладка не найдена: ', `tab-${tabName}`);
@@ -1125,7 +1134,6 @@ function initTabNavigation() {
         });
     });
 }
-
 
 // Инициализация при загрузке страницы
 document.addEventListener("DOMContentLoaded", function() {
@@ -1497,6 +1505,7 @@ function formatAllAmounts() {
     const totalElement = document.getElementById('totalBalance');
     const incomeElement = document.getElementById('monthIncome');
     const expenseElement = document.getElementById('monthExpense');
+    const netProfitElement = document.getElementById('netProfit'); // Добавляем чистую прибыль
     
     if (totalElement) {
         const currentText = totalElement.textContent.replace(' с', '');
@@ -1511,6 +1520,12 @@ function formatAllAmounts() {
     if (expenseElement) {
         const currentText = expenseElement.textContent.replace(' с', '');
         expenseElement.textContent = formatAmount(currentText) + ' с';
+    }
+    
+    // Форматируем чистую прибыль
+    if (netProfitElement) {
+        const currentText = netProfitElement.textContent;
+        netProfitElement.textContent = formatAmount(currentText);
     }
     
     // Форматируем суммы в истории операций
@@ -1559,6 +1574,169 @@ document.addEventListener("DOMContentLoaded", function() {
             e.preventDefault();
         }
     }, { passive: false });
+});
+
+
+// =============================================
+// ОБНОВЛЕНИЕ РАЗДЕЛА СТАТИСТИКОЙ
+// =============================================
+function updateStatsSection() {
+    if (!window.initialBalances) return;
+
+    const incomeStat = document.getElementById('monthIncomeStat');
+    const expenseStat = document.getElementById('monthExpenseStat');
+    const currentBalanceEl = document.getElementById('currentBalance');
+    const netProfitEl = document.getElementById('netProfit');
+
+    const { total, income, expense } = window.initialBalances;
+    const netProfit = income - expense;
+
+    if (incomeStat) incomeStat.textContent = formatAmount(income);
+    if (expenseStat) expenseStat.textContent = formatAmount(expense);
+    if (currentBalanceEl) currentBalanceEl.textContent = formatAmount(total);
+    if (netProfitEl) netProfitEl.textContent = formatAmount(netProfit);
+
+    // проценты оставляем фиксированными по макету
+}
+
+
+// =============================================
+// ОБНОВЛЕНИЕ ТОП КАТЕГОРИЙ (адаптировано под get_categories_with_stats)
+// =============================================
+async function updateTopCategories() {
+    const container = document.getElementById('topCategories');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="text-center py-4 text-gray-400">
+            <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+            <p class="text-sm mt-2">Загрузка...</p>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/get_categories_with_stats/?period=month');
+        const data = await response.json();
+
+        if (data.categories && data.categories.length > 0) {
+            container.innerHTML = '';
+
+            data.categories.forEach(cat => {
+                const isExpense = cat.expense_amount > 0;
+                const amount = cat.expense_amount || 0;
+                const percent = cat.percentage || 0;
+                const iconColor = cat.color || '#999';
+                const bgColor = `${iconColor}22`;
+
+                const itemHTML = `
+                    <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl">
+                        <div class="flex items-center">
+                            <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3"
+                                 style="background-color:${bgColor}; color:${iconColor};">
+                                <i class="${cat.icon}"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">${cat.name}</p>
+                                <p class="text-xs text-gray-400">1 транзакция</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-red-400">-${formatAmount(amount)} <span class="currency-symbol text-xs">с</span></p>
+                            <p class="text-xs text-gray-400">${percent}% расходов</p>
+                        </div>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', itemHTML);
+            });
+        } else {
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-tags text-3xl mb-3"></i>
+                    <p>Нет данных за этот период</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Ошибка при загрузке топ категорий:', error);
+        container.innerHTML = `
+            <div class="text-center py-8 text-red-400">
+                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                <p>Ошибка загрузки категорий</p>
+            </div>
+        `;
+    }
+}
+
+
+// =============================================
+// РАСЧЁТ И ОТОБРАЖЕНИЕ РЕЗЕРВА
+// =============================================
+
+// Глобальный процент резерва (по умолчанию 10%)
+let reservePercentage = localStorage.getItem('reservePercentage') 
+    ? parseFloat(localStorage.getItem('reservePercentage')) 
+    : 10;
+
+function updateReserveDisplay() {
+    const income = window.initialBalances?.income || 0;
+    const reserveAmount = income * (reservePercentage / 100);
+
+    const reserveMain = document.getElementById('reserveAmount');
+    const reserveStat = document.getElementById('reserveAmountStat');
+    const reserveLabel = document.getElementById('reservePercentValue');
+
+    if (reserveMain) reserveMain.textContent = formatAmount(reserveAmount.toFixed(0));
+    if (reserveStat) reserveStat.textContent = formatAmount(reserveAmount.toFixed(0));
+    if (reserveLabel) reserveLabel.textContent = reservePercentage;
+}
+
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const reserveInput = document.getElementById('reservePercentageInput');
+    const saveReserveBtn = document.getElementById('saveReserveBtn');
+
+    if (!reserveInput || !saveReserveBtn) return;
+
+    // Устанавливаем текущее значение процента
+    const savedValue = localStorage.getItem('reservePercentage');
+    if (savedValue !== null) {
+        reserveInput.value = savedValue;
+    }
+
+    saveReserveBtn.addEventListener('click', () => {
+        const newValue = parseFloat(reserveInput.value);
+        if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+            alert('Введите значение от 0 до 100');
+            return;
+        }
+
+        reservePercentage = newValue;
+        localStorage.setItem('reservePercentage', newValue);
+        updateReserveDisplay();
+
+        // Визуально показываем успех
+        saveReserveBtn.disabled = true;
+        saveReserveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Сохранено';
+        saveReserveBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+        saveReserveBtn.classList.add('bg-green-600');
+
+        // Закрываем модалку через 1.2 секунды
+        setTimeout(() => {
+            const menuModal = document.getElementById('menuModal');
+            if (menuModal) toggleModal('menuModal', false);
+
+            // Возвращаем кнопку к исходному виду
+            setTimeout(() => {
+                saveReserveBtn.disabled = false;
+                saveReserveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
+                saveReserveBtn.classList.remove('bg-green-600');
+                saveReserveBtn.classList.add('bg-blue-600', 'hover:bg-blue-500');
+            }, 400);
+        }, 1200);
+    });
 });
 
 
