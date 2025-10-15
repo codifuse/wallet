@@ -38,45 +38,35 @@ function toggleModal(modalId, show = true) {
 document.addEventListener("DOMContentLoaded", () => {
     const menuModal = document.getElementById("menuModal");
     const menuBtn = document.getElementById("menuToggleBtn");
-    
+
     // Открытие модалки меню
     if (menuBtn && menuModal) {
         menuBtn.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleModal('menuModal', true);
+            animateModal(menuModal, true);
         });
     }
-    
+
     // Закрытие модалки меню при клике на кнопку "Закрыть"
     const closeMenuBtn = document.querySelector('#menuModal button[onclick*="toggleMenuModal"]');
     if (closeMenuBtn) {
         closeMenuBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            toggleModal('menuModal', false);
+            animateModal(menuModal, false);
         });
     }
-    
+
     // Закрытие модалки меню при клике вне окна
     if (menuModal) {
         menuModal.addEventListener('click', (e) => {
             if (e.target === menuModal) {
-                toggleModal('menuModal', false);
+                animateModal(menuModal, false);
             }
         });
     }
 });
 
-function toggleMenuModal() {
-    const menuModal = document.getElementById("menuModal");
-    if (menuModal) {
-        if (menuModal.classList.contains('hidden')) {
-            menuModal.classList.remove('hidden');
-        } else {
-            menuModal.classList.add('hidden');
-        }
-    }
-}
 
 
 // =============================================
@@ -143,23 +133,38 @@ function initTransactionModal() {
         return;
     }
 
-    // Открытие модалки
-    openBtn.addEventListener("click", async function() {
-        console.log('Открытие модалки транзакции');
-        modal.classList.remove("hidden");
-        resetTransactionForm();
-        
-        // ВСЕГДА ОБНОВЛЯЕМ КАТЕГОРИИ ПРИ ОТКРЫТИИ МОДАЛКИ (НА СЛУЧАЙ ИЗМЕНЕНИЙ)
-        await updateGlobalCategories();
-        loadCategories();
-    });
 
-    // Закрытие модалки
-    if (closeBtn) {
-        closeBtn.addEventListener("click", function() {
-            modal.classList.add("hidden");
-        });
+    // Открытие модалки с анимацией
+openBtn.addEventListener("click", async function() {
+    modal.classList.remove("hidden");
+    modal.classList.add("animate-overlayFadeIn");
+
+    const modalContent = modal.querySelector('.modal-content'); // контейнер внутри
+    if (modalContent) {
+        modalContent.classList.remove('animate-modalHide');
+        modalContent.classList.add('animate-modalShow');
     }
+
+    resetTransactionForm();
+    await updateGlobalCategories();
+    loadCategories();
+});
+
+    // Закрытие модалки с анимацией
+if (closeBtn) {
+    closeBtn.addEventListener("click", function() {
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.classList.remove('animate-modalShow');
+            modalContent.classList.add('animate-modalHide');
+        }
+
+        // Убираем модалку после завершения анимации
+        setTimeout(() => {
+            modal.classList.add("hidden");
+        }, 200);
+    });
+}
 
     // Закрытие по клику вне окна
     modal.addEventListener('click', function(e) {
@@ -316,14 +321,15 @@ function initFormSubmission() {
             const data = await response.json();
             
             if (data.success) {
-                modal.classList.add('hidden');
+               animateModal(modal, false);
+
 
                 
                 // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
                 await updateInterfaceAfterTransaction(data);
                 
                 
-                showSuccessNotification('Запись сохранена!');
+                showSuccessNotification('Транзакция успешна!');
             } else {
                 alert(data.error || "Ошибка при сохранении");
             }
@@ -430,11 +436,13 @@ function addTransactionToList(transaction) {
     const formattedDate = transactionDate.toLocaleDateString('ru-RU');
     const formattedTime = transactionDate.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
     
+    
     // Создаем HTML для новой транзакции
     const transactionHTML = `
-        <div class="transaction-item bg-gray-800 rounded-lg p-3 flex justify-between items-center" 
-             data-category-id="${transaction.category_id}"
-             data-transaction-id="${transaction.id}">
+    <div class="transaction-item bg-gray-800 rounded-lg p-3 flex justify-between items-center animate-fadeIn" 
+         data-category-id="${transaction.category_id}"
+         data-transaction-id="${transaction.id}">
+
             <div class="flex items-center space-x-3">
                 <div class="w-10 h-10 rounded-full flex items-center justify-center" 
                      style="background-color: ${transaction.category_color}22; color: ${transaction.category_color}">
@@ -696,22 +704,22 @@ function initCategoriesTab() {
     const saveCategoryBtn = document.getElementById('saveCategoryBtn');
     const closeCategoryModalBtns = document.querySelectorAll('.close-modal[data-modal="category"]');
     
-    // Открытие модалки добавления категории
-    if (addCategoryBtn && categoryModal) {
-        addCategoryBtn.addEventListener('click', function() {
-            categoryModal.classList.remove('hidden');
-            initIconsGrid();
-            initColorsGrid();
-        });
-    }
-    
-    // Закрытие модалки категории
-    closeCategoryModalBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            categoryModal.classList.add('hidden');
-        });
+// Открытие модалки добавления категории
+if (addCategoryBtn && categoryModal) {
+    addCategoryBtn.addEventListener('click', function() {
+        animateModal(categoryModal, true);
+        initIconsGrid();
+        initColorsGrid();
     });
-    
+}
+
+// Закрытие модалки категории
+closeCategoryModalBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+        animateModal(categoryModal, false);
+    });
+});
+
     // Сохранение категории
     if (saveCategoryBtn) {
         saveCategoryBtn.addEventListener('click', saveCategory);
@@ -825,7 +833,8 @@ async function saveCategory() {
         const data = await response.json();
         
      if (data.success) {
-        document.getElementById('categoryModal').classList.add('hidden');
+       animateModal(document.getElementById('categoryModal'), false);
+
         nameInput.value = '';
         
         // Сбрасываем выделение иконки и цвета
@@ -855,6 +864,11 @@ async function saveCategory() {
 async function loadUserCategories() {
     const categoriesList = document.getElementById('categoriesList');
     if (!categoriesList) return;
+
+    const categoryElement = document.createElement('div');
+categoryElement.className = 'category-item bg-gray-800 rounded-lg p-3 flex justify-between items-center animate-popIn';
+
+
     
     try {
         // Используем новый endpoint со статистикой
@@ -1157,7 +1171,8 @@ function initTabNavigation() {
             const activeTab = document.getElementById(`tab-${tabName}`);
             if (activeTab) {
                 activeTab.classList.add('active');
-                
+                activeTab.classList.add('animate-fadeIn');
+
                 if (tabName === 'categories') {
                     loadUserCategories();
                 }
@@ -1636,8 +1651,8 @@ async function updateTopCategories() {
                 const iconColor = cat.color || '#999';
                 const bgColor = `${iconColor}22`;
 
-                const itemHTML = `
-                    <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl">
+               const itemHTML = `
+    <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl animate-fadeIn">
                         <div class="flex items-center">
                             <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3"
                                  style="background-color:${bgColor}; color:${iconColor};">
@@ -1745,6 +1760,26 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+// === Универсальная анимация модалок ===
+function animateModal(modal, show = true) {
+    const modalContent = modal.querySelector('.modal-content');
+    if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (modalContent) {
+            modalContent.classList.remove('animate-modalHide');
+            modalContent.classList.add('animate-modalShow');
+        }
+    } else {
+        if (modalContent) {
+            modalContent.classList.remove('animate-modalShow');
+            modalContent.classList.add('animate-modalHide');
+        }
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+}
 
 
 

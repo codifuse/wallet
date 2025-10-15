@@ -15,6 +15,9 @@ from django.core.paginator import Paginator
 
 from django.db.models import Sum, Count, Q
 
+from .models import Note
+from django.utils import timezone
+
 
 def create_default_categories(user):
     """Создает категории по умолчанию для пользователя"""
@@ -469,3 +472,194 @@ def get_categories_with_stats(request):
         })
     
     return JsonResponse({"categories": categories_data})
+
+
+################# ЗАМЕТКИ ##############
+
+@login_required
+def get_notes(request):
+    notes = Note.objects.filter(user=request.user).order_by('-created_at')
+    notes_data = []
+    for note in notes:
+        notes_data.append({
+            'id': note.id,
+            'title': note.title,
+            'content': note.content,
+            'reminder_date': note.reminder_date.isoformat() if note.reminder_date else None,
+            'is_reminded': note.is_reminded,
+            'created_at': note.created_at.isoformat(),
+        })
+    return JsonResponse({"notes": notes_data})
+
+@login_required
+def add_note(request):
+    if request.method == "POST":
+        try:
+            title = request.POST.get("title")
+            content = request.POST.get("content", "")
+            reminder_date_str = request.POST.get("reminder_date")
+
+            if not title:
+                return JsonResponse({"success": False, "error": "Не указан заголовок"})
+
+            # Обрабатываем дату напоминания
+            reminder_date = None
+            if reminder_date_str:
+                try:
+                    from datetime import datetime
+                    from django.utils import timezone
+                    import re
+                    
+                    # Парсим дату с временной зоной
+                    # Формат: YYYY-MM-DDTHH:MM:SS+HH:MM или YYYY-MM-DDTHH:MM:SS-HH:MM
+                    if 'T' in reminder_date_str and ('+' in reminder_date_str or '-' in reminder_date_str):
+                        # Это дата с временной зоной
+                        reminder_date = datetime.fromisoformat(reminder_date_str)
+                    else:
+                        # Это дата без временной зоны - считаем что это локальное время
+                        reminder_date = datetime.strptime(reminder_date_str, '%Y-%m-%d %H:%M:%S')
+                        # Делаем дату "aware" с текущим часовым поясом
+                        reminder_date = timezone.make_aware(reminder_date)
+                    
+                    print(f"Parsed reminder date: {reminder_date}")
+                    print(f"Reminder date timezone: {reminder_date.tzinfo}")
+                        
+                except (ValueError, TypeError) as e:
+                    print(f"Ошибка преобразования даты: {e}")
+                    return JsonResponse({"success": False, "error": f"Неверный формат даты: {e}"})
+
+            note = Note.objects.create(
+                user=request.user,
+                title=title,
+                content=content,
+                reminder_date=reminder_date
+            )
+
+            # Возвращаем данные созданной заметки
+            note_data = {
+                'id': note.id,
+                'title': note.title,
+                'content': note.content,
+                'reminder_date': note.reminder_date.isoformat() if note.reminder_date else None,
+                'is_reminded': note.is_reminded,
+                'created_at': note.created_at.isoformat(),
+            }
+
+            return JsonResponse({"success": True, "note": note_data})
+
+        except Exception as e:
+            print(f"Ошибка при создании заметки: {str(e)}")
+            return JsonResponse({"success": False, "error": f"Внутренняя ошибка сервера: {str(e)}"})
+
+    return JsonResponse({"success": False, "error": "Неверный метод запроса"})
+
+@login_required
+def edit_note(request, note_id):
+    if request.method == "POST":
+        try:
+            note = Note.objects.get(id=note_id, user=request.user)
+            title = request.POST.get("title")
+            content = request.POST.get("content", "")
+            reminder_date_str = request.POST.get("reminder_date")
+
+            if not title:
+                return JsonResponse({"success": False, "error": "Не указан заголовок"})
+
+            # Обрабатываем дату напоминания
+            reminder_date = None
+            if reminder_date_str:
+                try:
+                    from datetime import datetime
+                    from django.utils import timezone
+                    import re
+                    
+                    # Парсим дату с временной зоной
+                    if 'T' in reminder_date_str and ('+' in reminder_date_str or '-' in reminder_date_str):
+                        reminder_date = datetime.fromisoformat(reminder_date_str)
+                    else:
+                        reminder_date = datetime.strptime(reminder_date_str, '%Y-%m-%d %H:%M:%S')
+                        reminder_date = timezone.make_aware(reminder_date)
+                    
+                    print(f"Parsed reminder date for edit: {reminder_date}")
+                    print(f"Reminder date timezone for edit: {reminder_date.tzinfo}")
+                        
+                except (ValueError, TypeError) as e:
+                    print(f"Ошибка преобразования даты: {e}")
+                    return JsonResponse({"success": False, "error": f"Неверный формат даты: {e}"})
+
+            note.title = title
+            note.content = content
+            note.reminder_date = reminder_date
+            note.save()
+
+            # Возвращаем обновленные данные заметки
+            note_data = {
+                'id': note.id,
+                'title': note.title,
+                'content': note.content,
+                'reminder_date': note.reminder_date.isoformat() if note.reminder_date else None,
+                'is_reminded': note.is_reminded,
+                'created_at': note.created_at.isoformat(),
+            }
+
+            return JsonResponse({"success": True, "note": note_data})
+
+        except Note.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Заметка не найдена"})
+        except Exception as e:
+            print(f"Ошибка при редактировании заметки: {str(e)}")
+            return JsonResponse({"success": False, "error": f"Внутренняя ошибка сервера: {str(e)}"})
+
+    return JsonResponse({"success": False, "error": "Неверный метод запроса"})
+
+@login_required
+def delete_note(request, note_id):
+    try:
+        note = Note.objects.get(id=note_id, user=request.user)
+        note.delete()
+        return JsonResponse({"success": True})
+    except Note.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Заметка не найдена"})
+
+@login_required
+def mark_note_as_reminded(request, note_id):
+    try:
+        note = Note.objects.get(id=note_id, user=request.user)
+        note.is_reminded = True
+        note.save()
+        
+        # Возвращаем обновленные данные заметки
+        note_data = {
+            'id': note.id,
+            'title': note.title,
+            'content': note.content,
+            'reminder_date': note.reminder_date.isoformat() if note.reminder_date else None,
+            'is_reminded': note.is_reminded,
+            'created_at': note.created_at.isoformat(),
+        }
+        
+        return JsonResponse({"success": True, "note": note_data})
+    except Note.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Заметка не найдена"})
+
+@login_required
+def get_pending_reminders(request):
+    # Получаем заметки, у которых reminder_date наступил и is_reminded=False
+    from django.utils import timezone
+    now = timezone.now()
+    reminders = Note.objects.filter(
+        user=request.user,
+        reminder_date__lte=now,
+        is_reminded=False
+    ).order_by('reminder_date')
+    
+    reminders_data = []
+    for note in reminders:
+        reminders_data.append({
+            'id': note.id,
+            'title': note.title,
+            'content': note.content,
+            'reminder_date': note.reminder_date.isoformat() if note.reminder_date else None,
+        })
+    
+    return JsonResponse({"reminders": reminders_data})
