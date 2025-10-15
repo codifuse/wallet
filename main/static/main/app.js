@@ -91,7 +91,6 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Инициализируем систему фильтрации
     if (typeof initTransactionFilter === 'function') {
-        console.log("Инициализация системы фильтрации транзакций...");
         initTransactionFilter();
     }
     
@@ -313,12 +312,12 @@ function initFormSubmission() {
             
             if (data.success) {
                 modal.classList.add('hidden');
-                console.log('Успешно добавлено!');
+
                 
                 // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
                 await updateInterfaceAfterTransaction(data);
                 
-                showSuccessNotification('Успешно добавлено!');
+                showSuccessNotification('Запись сохранена!');
             } else {
                 alert(data.error || "Ошибка при сохранении");
             }

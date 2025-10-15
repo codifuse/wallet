@@ -760,7 +760,6 @@ body {
 
 /* Принудительные стили для отладки */
 #filterDropdown {
-    z-index: 9999 !important;
     position: absolute !important;
     background: #1f2937 !important;
     border: 1px solid #374151 !important;
@@ -768,7 +767,7 @@ body {
 
 #filterToggleBtn {
     position: relative !important;
-    z-index: 10000 !important;
+
 }
 
 .filter-option {

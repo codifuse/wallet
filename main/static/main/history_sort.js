@@ -17,7 +17,7 @@ function initTransactionFilter() {
     const filterDropdown = document.getElementById('filterDropdown');
     const filterOptions = document.querySelectorAll('.filter-option');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
-
+    
     // Переключение выпадающего списка
     if (filterToggleBtn && filterDropdown) {
         filterToggleBtn.addEventListener('click', function(e) {
@@ -378,9 +378,21 @@ function refreshCategoryTabs() {
     }
 }
 
-// Делаем функции глобально доступными для app.js
+// Автоматическая инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing transaction filter...');
+    if (typeof initTransactionFilter === 'function') {
+        setTimeout(() => {
+            initTransactionFilter();
+        }, 100);
+    }
+});
+
+
+// В конце history_sort.js убедитесь, что есть:
 window.initTransactionFilter = initTransactionFilter;
 window.loadTransactions = loadTransactions;
 window.updateCategoryTabsHandlers = updateCategoryTabsHandlers;
 window.refreshCategoryTabs = refreshCategoryTabs;
 window.checkEmptyStatesAfterChange = checkEmptyStatesAfterChange;
+window.updateInterfaceAfterTransaction = updateInterfaceAfterTransaction; // добавьте эту строку
