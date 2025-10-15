@@ -42,27 +42,30 @@
 
     <!-- Основной контейнер приложения -->
     <div class="app-container">
-        <!-- Верхний бар с логотипом, уведомлением и меню -->
-        <div class="mobile-header">
-            <div class="flex justify-between items-center mb-4 relative">
-                <!-- Логотип -->
-                <div class="flex items-center relative flex-shrink-0">
-                    <img id="logo2" src="{% static 'main/ico.svg' %}" alt="Koinda" class="h-10">
-                </div>
-
-                <!-- Уведомление по центру -->
-
-
-                  <div id="notificationContainer" class="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center pointer-events-none text-sm"></div>
-
-                <!-- Кнопка меню -->
-                <div class="flex items-center space-x-2 text-sm flex-shrink-0">
-                    <button id="menuToggleBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2">
-                        <i class="fas fa-bars text-gray-300"></i>
-                    </button>
-                </div>
+       <!-- Верхний бар с логотипом, уведомлением и меню -->
+<div class="mobile-header">
+    <div class="flex justify-between items-center mb-4 relative">
+        <!-- Логотип и версия -->
+        <div class="flex items-center relative flex-shrink-0">
+            <div class="relative">
+                <img id="logo2" src="{% static 'main/ico.svg' %}" alt="Koinda" class="h-10">
+                <span class="absolute -top-1 -right-5 text-[10px] text-gray-400 font-medium">
+                    v1.19
+                </span>
             </div>
         </div>
+
+        <!-- Уведомление по центру -->
+        <div id="notificationContainer" class="absolute left-0 right-0 top-0 bottom-0 flex items-center justify-center pointer-events-none text-sm"></div>
+
+        <!-- Кнопка меню -->
+        <div class="flex items-center space-x-2 text-sm flex-shrink-0">
+            <button id="menuToggleBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2">
+                <i class="fas fa-bars text-gray-300"></i>
+            </button>
+        </div>
+    </div>
+</div>
 
         <!-- Главная вкладка -->
         <div class="mobile-tab active" id="tab-home">
