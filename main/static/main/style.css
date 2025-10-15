@@ -778,3 +778,26 @@ body {
 .filter-option:hover {
     background: #374151 !important;
 }
+
+
+/* Анимация подсказки */
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    40% {
+        transform: translateX(-50%) translateY(-10px);
+    }
+    60% {
+        transform: translateX(-50%) translateY(-5px);
+    }
+}
+
+.animate-bounce {
+    animation: bounce 2s infinite;
+}
+
+/* Убедимся, что mobile-nav-center имеет relative positioning */
+.mobile-nav-center {
+    position: relative;
+}

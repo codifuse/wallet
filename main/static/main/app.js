@@ -78,33 +78,7 @@ function toggleMenuModal() {
     }
 }
 
-// =============================================
-// ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
-// =============================================
 
-document.addEventListener("DOMContentLoaded", function() {
-    initLogoAnimation();
-    initTransactionModal();
-    updateBalanceDisplay();
-    updateStatsSection();
-    updateTopCategories();
-    
-    // Инициализируем систему фильтрации
-    if (typeof initTransactionFilter === 'function') {
-        initTransactionFilter();
-    }
-    
-    initTabNavigation();
-    initCategoriesTab();
-    initTransactionDeletion();
-    initCategoryDeletion();
-
-    // Форматируем все суммы на странице
-    formatAllAmounts();
-    
-    // Загружаем актуальные категории при загрузке страницы
-    updateGlobalCategories();
-});
 // =============================================
 // ОБНОВЛЕНИЕ БАЛАНСА
 // =============================================
@@ -120,8 +94,39 @@ function updateBalanceDisplay() {
     if (incomeElement) incomeElement.textContent = window.initialBalances.income + ' с';
     if (expenseElement) expenseElement.textContent = window.initialBalances.expense + ' с';
     updateReserveDisplay();
-
 }
+
+
+// =============================================
+// УПРАВЛЕНИЕ ПРИВЕТСТВЕННЫМ УВЕДОМЛЕНИЕМ
+// =============================================
+
+function checkAndHideWelcomeHint() {
+    const welcomeHint = document.getElementById('welcomeHint');
+    const totalBalance = window.initialBalances?.total || 0;
+    
+    if (welcomeHint && totalBalance !== 0) {
+        hideWelcomeHint();
+    }
+}
+
+function hideWelcomeHint() {
+    const welcomeHint = document.getElementById('welcomeHint');
+    if (welcomeHint) {
+        // Добавляем анимацию исчезновения
+        welcomeHint.style.opacity = '0';
+        welcomeHint.style.transform = 'translateX(-50%) scale(0.8)';
+        welcomeHint.style.transition = 'all 0.3s ease';
+        
+        // Удаляем элемент после анимации
+        setTimeout(() => {
+            if (welcomeHint.parentNode) {
+                welcomeHint.remove();
+            }
+        }, 300);
+    }
+}
+
 
 // =============================================
 // МОДАЛКА ДОБАВЛЕНИЯ ТРАНЗАКЦИИ
@@ -317,6 +322,7 @@ function initFormSubmission() {
                 // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
                 await updateInterfaceAfterTransaction(data);
                 
+                
                 showSuccessNotification('Запись сохранена!');
             } else {
                 alert(data.error || "Ошибка при сохранении");
@@ -336,12 +342,31 @@ async function updateInterfaceAfterTransaction(data) {
     // 2. Добавляем новую транзакцию в список
     addTransactionToList(data.transaction);
     
-    // 3. Проверяем пустые состояния
+    // 3. Скрываем подсказку для нового пользователя
+    hideWelcomeHint();
+    
+    // 4. Проверяем пустые состояния
     checkEmptyStates();
 }
 
-// Функция для обновления балансов после добавления транзакции
-// Функция для обновления балансов после добавления транзакции
+// Функция для скрытия подсказки
+function hideWelcomeHint() {
+    const welcomeHint = document.getElementById('welcomeHint');
+    if (welcomeHint) {
+        // Добавляем анимацию исчезновения
+        welcomeHint.style.opacity = '0';
+        welcomeHint.style.transform = 'translateX(-50%) scale(0.8)';
+        welcomeHint.style.transition = 'all 0.3s ease';
+        
+        // Удаляем элемент после анимации
+        setTimeout(() => {
+            welcomeHint.remove();
+        }, 300);
+    }
+}
+
+
+// Обновляем функцию обновления баланса после транзакции
 function updateBalancesAfterTransaction(type, amount) {
     const totalElement = document.getElementById('totalBalance');
     const incomeElement = document.getElementById('monthIncome');
@@ -349,7 +374,7 @@ function updateBalancesAfterTransaction(type, amount) {
     
     if (!totalElement || !incomeElement || !expenseElement) return;
     
-    // Получаем текущие значения (убираем форматирование и текст "с")
+    // Получаем текущие значения
     const currentTotal = parseFloat(totalElement.textContent.replace(/\s/g, '').replace('с', ''));
     const currentIncome = parseFloat(incomeElement.textContent.replace(/\s/g, '').replace('с', ''));
     const currentExpense = parseFloat(expenseElement.textContent.replace(/\s/g, '').replace('с', ''));
@@ -359,11 +384,9 @@ function updateBalancesAfterTransaction(type, amount) {
     let newExpense = currentExpense;
     
     if (type === 'income') {
-        // Добавляем доход: увеличиваем общий баланс и доходы
         newTotal = currentTotal + parseFloat(amount);
         newIncome = currentIncome + parseFloat(amount);
     } else {
-        // Добавляем расход: уменьшаем общий баланс и увеличиваем расходы
         newTotal = currentTotal - parseFloat(amount);
         newExpense = currentExpense + parseFloat(amount);
     }
@@ -380,7 +403,10 @@ function updateBalancesAfterTransaction(type, amount) {
         window.initialBalances.expense = newExpense;
     }
     
-    // ОБНОВЛЯЕМ РЕЗЕРВ
+    // Проверяем и скрываем приветственное уведомление
+    checkAndHideWelcomeHint();
+    
+    // Обновляем резерв
     updateReserveDisplay();
 }
 
@@ -395,6 +421,9 @@ function addTransactionToList(transaction) {
     
     if (emptyStateAll) emptyStateAll.classList.add('hidden');
     if (emptyStateFiltered) emptyStateFiltered.classList.add('hidden');
+    
+     // Скрываем подсказку при добавлении первой транзакции
+    hideWelcomeHint();
     
     // Форматируем дату
     const transactionDate = new Date(transaction.created_at);
@@ -1407,8 +1436,7 @@ async function processTransactionDeletion(transactionId, transactionElement, tra
     }
 }
 
-// Функция для обновления балансов после удаления транзакции
-// Функция для обновления балансов после удаления транзакции
+/// Обновляем функцию обновления баланса после удаления транзакции
 function updateBalancesAfterDeletion(sign, amountValue) {
     const totalElement = document.getElementById('totalBalance');
     const incomeElement = document.getElementById('monthIncome');
@@ -1416,7 +1444,6 @@ function updateBalancesAfterDeletion(sign, amountValue) {
     
     if (!totalElement || !incomeElement || !expenseElement) return;
     
-    // Получаем текущие значения (убираем форматирование и текст "с")
     const currentTotal = parseFloat(totalElement.textContent.replace(/\s/g, '').replace('с', ''));
     const currentIncome = parseFloat(incomeElement.textContent.replace(/\s/g, '').replace('с', ''));
     const currentExpense = parseFloat(expenseElement.textContent.replace(/\s/g, '').replace('с', ''));
@@ -1426,11 +1453,9 @@ function updateBalancesAfterDeletion(sign, amountValue) {
     let newExpense = currentExpense;
     
     if (sign === '+') {
-        // Удаляем доход: уменьшаем общий баланс и доходы
         newTotal = currentTotal - amountValue;
         newIncome = currentIncome - amountValue;
     } else {
-        // Удаляем расход: увеличиваем общий баланс и уменьшаем расходы
         newTotal = currentTotal + amountValue;
         newExpense = currentExpense - amountValue;
     }
@@ -1440,20 +1465,18 @@ function updateBalancesAfterDeletion(sign, amountValue) {
     incomeElement.textContent = formatAmount(newIncome) + ' с';
     expenseElement.textContent = formatAmount(newExpense) + ' с';
     
-    // Обновляем глобальные переменные (на случай если они где-то используются)
+    // Обновляем глобальные переменные
     if (window.initialBalances) {
         window.initialBalances.total = newTotal;
         window.initialBalances.income = newIncome;
         window.initialBalances.expense = newExpense;
     }
     
-    // ОБНОВЛЯЕМ РЕЗЕРВ
-    updateReserveDisplay();
+    // Проверяем и скрываем приветственное уведомление
+    checkAndHideWelcomeHint();
     
-    console.log('Балансы обновлены после удаления транзакции:', {
-        sign, amountValue,
-        newTotal, newIncome, newExpense
-    });
+    // Обновляем резерв
+    updateReserveDisplay();
 }
 
 
@@ -1722,3 +1745,39 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+
+
+
+
+// =============================================
+// ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
+// =============================================
+
+document.addEventListener("DOMContentLoaded", function() {
+    initLogoAnimation();
+    initTransactionModal();
+    updateBalanceDisplay();
+    updateStatsSection();
+    updateTopCategories();
+ 
+    // Инициализируем систему фильтрации
+    if (typeof initTransactionFilter === 'function') {
+        initTransactionFilter();
+    }
+    
+    // Проверяем приветственное уведомление при загрузке
+    setTimeout(() => {
+        checkAndHideWelcomeHint();
+    }, 1000);
+
+    initTabNavigation();
+    initCategoriesTab();
+    initTransactionDeletion();
+    initCategoryDeletion();
+
+    // Форматируем все суммы на странице
+    formatAllAmounts();
+    
+    // Загружаем актуальные категории при загрузке страницы
+    updateGlobalCategories();
+});

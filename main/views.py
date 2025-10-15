@@ -47,12 +47,23 @@ def index(request):
     expense = expense_result['total'] or Decimal('0')
     total = income - expense
     
+    # Проверяем, является ли это первым входом (новый пользователь)
+    is_new_user = request.session.get('is_new_user', False)
+    if is_new_user:
+        # Убираем флаг, чтобы уведомление показывалось только один раз
+        request.session['is_new_user'] = False
+    
+    # Проверяем, есть ли у пользователя транзакции
+    has_transactions = transactions.exists()
+
     return render(request, 'index.html', {
         'categories': categories,
         'transactions': transactions,
         'income': income,
         'expense': expense,
         'total': total,
+        'is_new_user': is_new_user,
+        'has_transactions': has_transactions,  
     })
 
 @login_required
@@ -139,6 +150,11 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
+            # Устанавливаем флаг для показа приветствия
+            request.session['is_new_user'] = True
+            
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
             return redirect('index')
 
         # Если AJAX — вернём JSON с ошибкой
@@ -275,6 +291,9 @@ def register(request):
             # Автоматически авторизуем пользователя
             login(request, user)
             
+              # Устанавливаем флаг для показа приветствия
+            request.session['is_new_user'] = True
+
             return JsonResponse({
                 "success": True, 
                 "message": "Аккаунт успешно создан",
