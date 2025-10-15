@@ -1,58 +1,67 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Убираем фиксированную позицию у body */
+/* Базовые стили */
 body {
     font-family: 'Inter', sans-serif;
-    overflow-x: hidden;
     margin: 0;
     padding: 0;
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    overflow-x: hidden;
 }
 
-/* Новый стиль для основного контейнера */
+/* Основной контейнер */
 .app-container {
     height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
-/* Хедер - теперь sticky с размытым фоном */
+
+/* Хедер */
 .mobile-header {
     position: sticky;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 30;
-    background: rgba(15, 23, 42, 0.8); /* Полупрозрачный темный фон */
-    backdrop-filter: blur(20px); /* Эффект размытия */
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    padding: 1rem;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid rgba(71, 85, 105, 0.5);
-    height: auto;
+    height: 60px;
     box-sizing: border-box;
+    flex-shrink: 0; /* Не сжимается при скролле */
+}
+.mobile-header .flex.justify-between.items-center {
+    margin-bottom: 0.25rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
 }
 
-/* ПЕРЕОПРЕДЕЛЯЕМ ШИРИНУ КОНТЕНТА */
+/* Основной контент */
 .mobile-content {
-    padding: 1rem 0.25rem !important;
-    padding-bottom: 80px !important;
-    max-width: none !important;
-    margin-bottom: 1rem !important;
-    width: 100% !important;
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 20px 0.25rem 90px !important; /* Увеличиваем отступ для футера */
 }
 
-/* Делаем карточки шире */
-.card-gradient {
- margin-bottom: 1rem !important;
-}
-
-/* Убираем отступы у секций */
 .mobile-section {
-margin-bottom: 1rem !important;
-padding: 0 0.25rem !important;
+    margin-bottom: 1rem;
+    padding: 0 0.25rem;
 }
 
-/* Нижняя навигация - фиксированная */
+.mobile-tab {
+    display: none;
+}
+
+.mobile-tab.active {
+    display: block;
+}
+
+/* Нижняя навигация */
 .mobile-nav {
     position: fixed;
     bottom: 0;
@@ -64,70 +73,73 @@ padding: 0 0.25rem !important;
     padding: 0.5rem 0.75rem;
     align-items: center;
     height: 70px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Убираем старые стили для body */
-body {
-    overflow-y: auto; /* Возвращаем скролл */
+.mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.25rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    color: #94a3b8;
+    cursor: pointer;
+    height: 100%;
 }
 
-/* Улучшаем скроллбар для мобильного контента */
-.mobile-content::-webkit-scrollbar {
-    width: 4px;
+.mobile-nav-item.active {
+    color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.1);
 }
 
-.mobile-content::-webkit-scrollbar-track {
-    background: transparent;
+.mobile-nav-item i {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
 }
 
-.mobile-content::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 2px;
+.mobile-nav-item span {
+    font-size: 0.75rem;
 }
 
-.mobile-content::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
-}
-
-/* Адаптивность для разных высот экранов */
-@media (max-height: 700px) {
-    .mobile-nav {
-        height: 60px;
-    }
-    
-    .mobile-content {
-        padding-bottom: 70px;
-    }
-}
-
-/* Убедимся, что модальные окна поверх всего */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+.mobile-nav-center {
+    flex: 0 0 auto;
+    margin: 0 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
-    padding: 1rem;
+    height: 100%;
 }
 
-/* Убираем дублирующиеся стили */
-.mobile-content {
-    padding-bottom: 80px;
-    padding-top: 16px;
-    height: auto; /* Убираем фиксированную высоту */
+.mobile-nav-item-center {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 22px rgba(2,6,23,0.6);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    transform: translateY(-18px);
+    z-index: 60;
 }
- 
-    .mobile-nav {
-        height: 60px;
-    }
 
+.mobile-nav-item-center:hover {
+    transform: translateY(-18px) scale(1.05);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
 
+.mobile-nav-item-center i {
+    font-size: 1.5rem;
+    margin-bottom: 0;
+}
 
+/* Градиенты и карточки */
 .gradient-bg {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
@@ -135,79 +147,81 @@ body {
 .card-gradient {
     background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     border: 1px solid #475569;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
 }
 
-/* Стили для вкладок */
-.tab-active {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+/* Вкладки категорий */
+.tabs-container {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #1f2937;
+}
+
+.tabs-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.tabs-container::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 3px;
+}
+
+.tabs-container::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 3px;
+}
+
+.tabs-wrapper {
+    display: flex;
+    flex-wrap: nowrap;
+    min-width: min-content;
+    padding: 2px;
+    gap: 8px;
+}
+
+.tab {
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
     color: white;
-}
-
-/* Стили для кнопок типа операции */
-.type-btn-inactive {
-    background-color: #374151;
-    color: #9CA3AF;
-}
-
-.type-income-active {
-    background-color: #10B981;
-    color: white;
-}
-
-.type-expense-active {
-    background-color: #EF4444;
-    color: white;
-}
-
-/* Цвета для доходов/расходов */
-.income { color: #10b981; }
-.expense { color: #ef4444; }
-
-/* Анимации */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in {
-    animation: fadeIn 0.3s ease;
-}
-
-/* Стили для карточек */
-.category-card, .transaction-item, .note-card {
+    cursor: pointer;
+    white-space: nowrap;
     transition: all 0.3s ease;
+    border: 1px solid transparent;
 }
 
-.category-card:hover, .note-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-}
-
-.transaction-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Стили для инпутов */
-.input-field {
-    width: 100%;
-    background-color: #1f2937;
-    border: 1px solid #374151;
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-    color: white;
-    outline: none;
-}
-
-.input-field:focus {
+.tab.active {
+    background: #3b82f6;
     border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
 }
 
-.amount-input:focus {
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+.tab:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.2);
 }
 
-/* Стили для кнопок */
+.tab span {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Уведомления */
+.notification-inline {
+    background: rgba(73, 37, 235, 0.15);
+    border: 1px solid rgba(37, 99, 235, 0.3);
+    color: white;
+    border-radius: 0.75rem;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    justify-content: center;
+    height: 36px;
+    font-size: 0.85rem;
+    box-shadow: inset 0 0 10px rgba(37, 99, 235, 0.25);
+}
+
+/* Кнопки и инпуты */
 .btn-primary {
     width: 100%;
     background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
@@ -254,6 +268,21 @@ body {
     background-color: #b91c1c;
 }
 
+.input-field {
+    width: 100%;
+    background-color: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: white;
+    outline: none;
+}
+
+.input-field:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
 /* Модальные окна */
 .modal-overlay {
     position: fixed;
@@ -283,58 +312,173 @@ body {
     display: none !important;
 }
 
-/* Стили для селекта */
-.select-arrow {
-    pointer-events: none;
-    position: absolute;
-    right: 0;
-    display: flex;
-    align-items: center;
-    padding: 0 0.5rem;
-    color: #9ca3af;
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* Цифровая клавиатура */
-.number-pad {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    margin-top: 0.75rem;
+.fade-in {
+    animation: fadeIn 0.3s ease;
 }
 
-.number-btn {
-    background-color: #374151;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    font-size: 1.125rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    border: none;
-    color: white;
-    cursor: pointer;
+/* Утилиты */
+.flex { display: flex; }
+.block { display: block; }
+.grid { display: grid; }
+.hidden { display: none !important; }
+
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1 1 0%; }
+.flex-shrink-0 { flex-shrink: 0; }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+
+.w-full { width: 100%; }
+.h-8 { height: 2rem; }
+.h-10 { height: 2.5rem; }
+.min-h-screen { min-height: 100vh; }
+
+.p-1 { padding: 0.25rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+.mt-1 { margin-top: 0.25rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-6 { margin-top: 1.5rem; }
+.mr-2 { margin-right: 0.5rem; }
+
+.space-y-3 > * + * { margin-top: 0.75rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+.space-x-2 > * + * { margin-left: 0.5rem; }
+.space-x-3 > * + * { margin-left: 0.75rem; }
+
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-2xl { border-radius: 1rem; }
+.rounded-full { border-radius: 9999px; }
+
+.border { border-width: 1px; }
+.border-gray-700 { border-color: #374151; }
+
+.bg-gray-800 { background-color: #1f2937; }
+.bg-gray-700 { background-color: #374151; }
+.bg-red-600 { background-color: #dc2626; }
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.text-lg { font-size: 1.125rem; }
+.text-xl { font-size: 1.25rem; }
+.text-2xl { font-size: 1.5rem; }
+.text-3xl { font-size: 1.875rem; }
+
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+.text-white { color: white; }
+.text-gray-200 { color: #e5e7eb; }
+.text-gray-300 { color: #d1d5db; }
+.text-gray-400 { color: #9ca3af; }
+.text-blue-400 { color: #60a5fa; }
+.text-green-400 { color: #34d399; }
+.text-red-400 { color: #f87171; }
+
+.truncate { 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.number-btn:hover {
-    background-color: #4B5563;
+.opacity-0 { opacity: 0; }
+.blur-md { filter: blur(12px); }
+
+.cursor-pointer { cursor: pointer; }
+
+.transition-all { transition: all 0.3s ease; }
+.transition-colors { transition: background-color 0.3s ease, color 0.3s ease; }
+
+.duration-700 { transition-duration: 700ms; }
+
+.z-30 { z-index: 30; }
+.z-40 { z-index: 40; }
+.z-50 { z-index: 50; }
+
+.max-w-sm { max-width: 24rem; }
+.max-w-md { max-width: 28rem; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+
+.hover\:bg-gray-700:hover { background-color: #374151; }
+.hover\:bg-gray-600:hover { background-color: #4b5563; }
+
+.focus\:outline-none:focus { outline: none; }
+.focus\:border-blue-500:focus { border-color: #3b82f6; }
+
+/* Адаптивность */
+@media (max-height: 700px) {
+    .mobile-header {
+        height: 50px;
+        padding: 0.25rem 0.75rem;
+    }
+
+    
+    .mobile-nav-item-center {
+        transform: translateY(-12px);
+        width: 56px;
+        height: 56px;
+    }
 }
 
-.number-btn:active {
-    background-color: #6B7280;
-    transform: scale(0.95);
+@media (max-width: 420px) {
+    .mobile-nav-item-center {
+        transform: translateY(-12px);
+        width: 56px;
+        height: 56px;
+    }
 }
 
-/* Контейнер для скролла */
-.categories-scroll {
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #4b5563 #1f2937;
-    padding-right: 0.5rem;
-    max-height: 20rem;
+/* Скрытие скроллбара для карусели */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Кастомный скроллбар */
 .categories-scroll::-webkit-scrollbar {
     width: 6px;
 }
@@ -353,103 +497,8 @@ body {
     background: #6b7280;
 }
 
-/* Карусель категорий */
-.tabs-container {
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #4b5563 #1f2937;
-}
 
-.tabs-container::-webkit-scrollbar {
-    height: 6px;
-}
-
-.tabs-container::-webkit-scrollbar-track {
-    background: #1f2937;
-    border-radius: 3px;
-}
-
-.tabs-container::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 3px;
-}
-
-.tabs-container::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
-}
-
-.tabs-wrapper {
-    display: flex;
-    flex-wrap: nowrap;
-    min-width: min-content;
-    padding: 2px;
-}
-
-/* Цвета для категорий */
-.color-blue { background-color: #60a5fa; }
-.color-green { background-color: #34d399; }
-.color-purple { background-color: #a78bfa; }
-.color-yellow { background-color: #fbbf24; }
-.color-red { background-color: #f87171; }
-.color-pink { background-color: #f472b6; }
-.color-indigo { background-color: #818cf8; }
-.color-teal { background-color: #2dd4bf; }
-.color-orange { background-color: #fb923c; }
-.color-cyan { background-color: #22d3ee; }
-
-/* Переключатель валюты */
-.currency-active {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-    color: white;
-}
-
-/* Кнопка удаления */
-.delete-btn {
-    opacity: 0;
-    transition: all 0.2s ease;
-}
-
-.category-card:hover .delete-btn,
-.transaction-item:hover .delete-btn {
-    opacity: 1;
-}
-
-/* Заметки */
-.note-content-preview {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.note-content-container {
-    background-color: #1f2937;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    max-height: 24rem;
-    overflow-y: auto;
-}
-
-
-.mobile-content {
-    padding-bottom: 5rem;
-    padding-top: 1rem;
-}
-
-.mobile-section {
-    margin-bottom: 1rem;
-    padding: 0 1rem;
-}
-
-.mobile-tab {
-    display: none;
-}
-
-.mobile-tab.active {
-    display: block;
-}
-
-/* Мобильная навигация */
+/* Стили для нижней навигации (футера) */
 .mobile-nav {
     display: flex;
     position: fixed;
@@ -525,660 +574,208 @@ body {
     margin-bottom: 0;
 }
 
-/* Утилиты */
-.fixed { position: fixed; }
-.absolute { position: absolute; }
-.relative { position: relative; }
-.sticky { position: sticky; }
-
-.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
-
-.flex { display: flex; }
-.block { display: block; }
-
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.justify-end { justify-content: flex-end; }
-
-.flex-col { flex-direction: column; }
-.flex-1 { flex: 1 1 0%; }
-.flex-shrink-0 { flex-shrink: 0; }
-
-.min-h-screen { min-height: 100vh; }
-.h-8 { height: 2rem; }
-.h-10 { height: 2.5rem; }
-.h-12 { height: 3rem; }
-.w-11 { width: 2.75rem; }
-.w-16 { width: 4rem; }
-.w-full { width: 100%; }
-.min-w-0 { min-width: 0; }
-.min-w-min { min-width: min-content; }
-
-.p-1 { padding: 0.25rem; }
-.p-3 { padding: 0.75rem; }
-.p-4 { padding: 1rem; }
-.p-6 { padding: 1.5rem; }
-.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-.px-4 { padding-left: 1rem; padding-right: 1rem; }
-.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-.py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-.pt-4 { padding-top: 1rem; }
-
-.mb-1 { margin-bottom: 0.25rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-3 { margin-bottom: 0.75rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.ml-2 { margin-left: 0.5rem; }
-.ml-3 { margin-left: 0.75rem; }
-.mr-1 { margin-right: 0.25rem; }
-.mr-2 { margin-right: 0.5rem; }
-.mr-3 { margin-right: 0.75rem; }
-.mt-1 { margin-top: 0.25rem; }
-.mt-2 { margin-top: 0.5rem; }
-.mt-3 { margin-top: 0.75rem; }
-.mt-4 { margin-top: 1rem; }
-.mt-6 { margin-top: 1.5rem; }
-
-.space-y-2 > * + * { margin-top: 0.5rem; }
-.space-y-3 > * + * { margin-top: 0.75rem; }
-.space-y-4 > * + * { margin-top: 1rem; }
-.space-x-2 > * + * { margin-left: 0.5rem; }
-.space-x-3 > * + * { margin-left: 0.75rem; }
-
-.grid { display: grid; }
-.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-
-.rounded-lg { border-radius: 0.5rem; }
-.rounded-xl { border-radius: 0.75rem; }
-.rounded-2xl { border-radius: 1rem; }
-.rounded-md { border-radius: 0.375rem; }
-.rounded-full { border-radius: 9999px; }
-
-.border { border-width: 1px; }
-.border-t { border-top-width: 1px; }
-.border-gray-700 { border-color: #374151; }
-
-.bg-gray-800 { background-color: #1f2937; }
-.bg-gray-700 { background-color: #374151; }
-.bg-red-500 { background-color: #ef4444; }
-.bg-red-600 { background-color: #dc2626; }
-
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-xs { font-size: 0.75rem; }
-.text-sm { font-size: 0.875rem; }
-.text-lg { font-size: 1.125rem; }
-.text-xl { font-size: 1.25rem; }
-.text-2xl { font-size: 1.5rem; }
-.text-3xl { font-size: 1.875rem; }
-.text-4xl { font-size: 2.25rem; }
-
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
-
-.text-white { color: white; }
-.text-gray-100 { color: #f3f4f6; }
-.text-gray-200 { color: #e5e7eb; }
-.text-gray-300 { color: #d1d5db; }
-.text-gray-400 { color: #9ca3af; }
-.text-gray-500 { color: #6b7280; }
-.text-blue-400 { color: #60a5fa; }
-.text-green-400 { color: #34d399; }
-.text-purple-400 { color: #a78bfa; }
-.text-yellow-400 { color: #fbbf24; }
-.text-red-400 { color: #f87171; }
-.text-pink-400 { color: #f472b6; }
-.text-indigo-400 { color: #818cf8; }
-.text-teal-400 { color: #2dd4bf; }
-.text-orange-400 { color: #fb923c; }
-.text-cyan-400 { color: #22d3ee; }
-
-.truncate { 
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* Убираем верхний отступ у блока с вкладками категорий */
+#tabsContainer {
+    margin-top: 0 !important;
 }
 
-.whitespace-pre-wrap { white-space: pre-wrap; }
-
-.opacity-0 { opacity: 0; }
-.blur-md { filter: blur(12px); }
-
-.cursor-pointer { cursor: pointer; }
-
-.appearance-none { appearance: none; }
-
-.transition-all { transition: all 0.3s ease; }
-.transition-colors { transition: background-color 0.3s ease, color 0.3s ease; }
-.transition-transform { transition: transform 0.3s ease; }
-
-.duration-700 { transition-duration: 700ms; }
-
-.scale-110 { transform: scale(1.1); }
-
-.ring-2 { box-shadow: 0 0 0 2px; }
-.ring-blue-500 { box-shadow-color: #3b82f6; }
-.ring-white { box-shadow-color: white; }
-
-.z-30 { z-index: 30; }
-.z-40 { z-index: 40; }
-.z-50 { z-index: 50; }
-
-.max-w-md { max-width: 28rem; }
-.max-w-2xl { max-width: 42rem; }
-
-.max-h-80 { max-height: 20rem; }
-.max-h-96 { max-height: 24rem; }
-.max-h-100 { max-height: 25rem; }
-
-.overflow-x-auto { overflow-x: auto; }
-.overflow-y-auto { overflow-y: auto; }
-.overflow-hidden { overflow: hidden; }
-
-.hover\:bg-gray-700:hover { background-color: #374151; }
-.hover\:bg-gray-600:hover { background-color: #4b5563; }
-.hover\:bg-red-600:hover { background-color: #dc2626; }
-.hover\:bg-red-700:hover { background-color: #b91c1c; }
-
-.hover\:text-white:hover { color: white; }
-.hover\:text-blue-300:hover { color: #93c5fd; }
-.hover\:text-red-300:hover { color: #fca5a5; }
-
-.focus\:outline-none:focus { outline: none; }
-.focus\:border-blue-500:focus { border-color: #3b82f6; }
-
-/* Стили для вкладок категорий */
-.tab-btn {
-    display: flex;
-    align-items: center;
-    white-space: nowrap;
-    padding: 0.75rem 1rem;
-    border-radius: 0.75rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    background-color: transparent;
-    color: #9ca3af;
-    border: none;
-    cursor: pointer;
+/* И у блока с историей */
+#transactionsListContainer {
+    margin-top: 0 !important;
 }
 
-.tab-btn:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #e5e7eb;
+/* Стили для вкладки категорий */
+#tab-categories .card-gradient {
+    margin: 0 0.25rem 1rem;
 }
 
-.tab-btn.tab-active {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+/* Заголовок категорий */
+#tab-categories h2 {
+    font-size: 1.125rem;
+    font-weight: 700;
     color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-.tab-btn i {
-    margin-right: 0.5rem;
-    font-size: 0.875rem;
+/* Кнопка добавления категории */
+#addCategoryBtn {
+    color: #60a5fa;
+    transition: color 0.3s ease;
 }
 
-.mobile-content {
-    padding-bottom: 80px;
-    padding-top: 16px;
-    height: calc(100vh - 180px);
-    overflow-y: auto;
+#addCategoryBtn:hover {
+    color: #93c5fd;
 }
 
-/* Стили для кнопки переключения валюты */
-.currency-toggle-btn {
-    background-color: #1f2937;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    transition: all 0.3s ease;
-    border: 1px solid #374151;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-}
 
-.currency-toggle-btn:hover {
-    background-color: #374151;
-    border-color: #4b5563;
-}
 
-.tabs-container {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.tabs-wrapper {
-    display: flex;
-    gap: 8px;
-    padding: 4px;
-    min-width: min-content;
-}
-
-.tab {
-    padding: 8px 16px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s ease;
-    border: 1px solid transparent;
-}
-
-.tab.active {
-    background: #3b82f6;
-    border-color: #3b82f6;
-}
-
-.tab:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.tab span {
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.icon-option, .color-option {
-    transition: all 0.3s ease;
-}
-
+/* Элемент категории */
 .category-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
 }
 
 .category-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
 }
 
-/* Стили для кнопки удаления транзакции */
-.delete-transaction-btn {
-    opacity: 0.7;
-    transition: all 0.2s ease;
-}
-
-.delete-transaction-btn:hover {
-    opacity: 1;
-    transform: scale(1.1);
-}
-
-/* Адаптивность для мобильных устройств */
-@media (max-width: 640px) {
-    .transaction-item {
-        padding: 12px;
-    }
-    
-    .delete-transaction-btn {
-        padding: 6px;
-    }
-}
-
-/* Стили для кнопки удаления в процессе */
-.delete-transaction-btn.processing {
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-.delete-transaction-btn.processing i {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Анимации для уведомлений */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-}
-
-.animate-fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
-}
-
-.animate-fade-out {
-    animation: fadeOut 0.3s ease-in forwards;
-}
-
-/* Стили для контейнера уведомлений */
-#notificationContainer {
-    min-height: 40px;
-    position: relative;
-    z-index: 10;
-}
-
-/* Плавные переходы для удаляемых элементов */
-.transaction-item, .category-item {
-    transition: all 0.3s ease;
-}
-
-/* Убедимся, что контейнеры корректно обрабатывают изменения высоты */
-#transactionsListContainer, #categoriesList {
-    transition: height 0.3s ease;
-}
-
-/* Дополнительные анимации для красивого удаления */
-@keyframes slideOut {
-    from {
-        opacity: 1;
-        transform: translateX(0);
-        max-height: 100px;
-    }
-    to {
-        opacity: 0;
-        transform: translateX(-100%);
-        max-height: 0;
-    }
-}
-
-.animate-slide-out {
-    animation: slideOut 0.4s ease-in forwards;
-}
-
-/* Стили для сообщения об удалении */
-.deletion-message {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
-    border: 1px solid rgba(34, 197, 94, 0.2);
+/* Иконка категории */
+.category-icon {
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: 0.5rem;
-}
-
-/* Стили для подтверждения удаления */
-.confirm-delete-btn, .confirm-category-delete-btn {
-    transition: all 0.2s ease;
-}
-
-.confirm-delete-btn:hover, .confirm-category-delete-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}
-
-.cancel-delete-btn, .cancel-category-delete-btn {
-    transition: all 0.2s ease;
-}
-
-.cancel-delete-btn:hover, .cancel-category-delete-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(75, 85, 99, 0.3);
-}
-
-/* Убедимся, что элементы транзакций и категорий имеют минимальную высоту */
-.transaction-item, .category-item {
-    min-height: 60px;
-    transition: all 0.3s ease;
-}
-
-.confirm-delete-btn:hover, .confirm-category-delete-btn:hover {
-    background-color: #dc2626 !important;
-    transform: none;
-}
-
-.cancel-delete-btn:hover, .cancel-category-delete-btn:hover {
-    background-color: #4b5563 !important;
-    transform: none;
-}
-
-/* Убедимся, что контейнеры растягиваются на всю высоту */
-#transactionsListContainer .transaction-item,
-#categoriesList .category-item {
-    height: auto;
-}
-
-/* Убедимся, что иконка удаления не имеет анимации при отмене */
-.delete-transaction-btn, .delete-category-btn {
-    transition: color 0.2s ease;
-}
-
-.delete-transaction-btn:hover, .delete-category-btn:hover {
-    color: #f87171;
-}
-
-/* Стили для карусели категорий */
-.carousel-container {
-  position: relative;
-  padding: 0 2rem;
-}
-
-.carousel-container:hover #scrollLeftBtn,
-.carousel-container:hover #scrollRightBtn {
-  opacity: 1;
-}
-
-/* Скрытие скроллбара */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-/* Стили для кнопок категорий в карусели */
-.category-carousel-btn {
-  flex: 0 0 auto;
-  min-width: 100px;
-  padding: 0.75rem 0.5rem;
-  border-radius: 0.75rem;
-  border: 2px solid #4b5563;
-  background-color: #374151;
-  color: #d1d5db;
-  transition: all 0.3s ease;
-  text-align: center;
-  font-size: 0.875rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.category-carousel-btn:hover {
-  background-color: #4b5563;
-  border-color: #6b7280;
-  transform: translateY(-2px);
-}
-
-.category-carousel-btn.active {
-  background-color: #2563eb;
-  border-color: #3b82f6;
-  color: white;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-}
-
-/* Анимация появления кнопок навигации */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-#scrollLeftBtn, #scrollRightBtn {
-  animation: fadeIn 0.3s ease;
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
-
-
-/* Стили для контейнера уведомлений в хедере */
-#notificationContainer {
-    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 0;
-    z-index: 10;
-    pointer-events: none;
+    margin-right: 0.75rem;
 }
 
-/* Стили для самих уведомлений */
-.notification {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9));
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    border-radius: 0.75rem;
-    padding: 0.5rem 1rem;
+/* Название категории */
+.category-name {
+    font-weight: 500;
     color: white;
+}
+
+/* Кнопка удаления категории */
+.delete-category-btn {
+    opacity: 0;
+    transition: all 0.3s ease;
+    color: #9ca3af;
+}
+
+.category-item:hover .delete-category-btn {
+    opacity: 1;
+}
+
+.delete-category-btn:hover {
+    color: #ef4444;
+}
+
+/* Состояние пустых категорий */
+#emptyCategoriesState {
+    color: #6b7280;
+    padding: 2rem 0;
+}
+
+
+/* Стили для кнопок категорий в модальном окне */
+.category-carousel-btn {
+    padding: 0.75rem 0.5rem;
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
     font-size: 0.875rem;
     font-weight: 500;
     text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    max-width: 200px;
-    word-wrap: break-word;
-    animation: slideInNotification 0.3s ease-out;
-    pointer-events: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
 }
 
-/* Уведомления об ошибке */
-.notification.error {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
-    border: 1px solid rgba(239, 68, 68, 0.3);
+.category-carousel-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
 }
 
-/* Уведомления об успехе */
-.notification.success {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.9));
-    border: 1px solid rgba(34, 197, 94, 0.3);
+.category-carousel-btn.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    border-color: #3b82f6;
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
-/* Анимация появления уведомления */
-@keyframes slideInNotification {
-    from {
-        opacity: 0;
-        transform: translateY(-10px) scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+/* Контейнер для кнопок категорий */
+#categoriesContainer {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    max-height: 12rem;
+    overflow-y: auto;
+    padding: 0.5rem;
+
 }
 
-/* Анимация исчезновения уведомления */
-@keyframes slideOutNotification {
-    from {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-    to {
-        opacity: 0;
-        transform: translateY(-10px) scale(0.9);
-    }
+/* Стили для скроллбара в контейнере категорий */
+#categoriesContainer::-webkit-scrollbar {
+    width: 6px;
 }
 
-.notification.hiding {
-    animation: slideOutNotification 0.3s ease-in forwards;
+#categoriesContainer::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+#categoriesContainer::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+#categoriesContainer::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 /* Адаптивность для маленьких экранов */
-@media (max-width: 640px) {
-    #notificationContainer {
-        min-height: 32px;
+@media (max-width: 380px) {
+    .category-carousel-btn {
+        font-size: 0.8rem;
+        padding: 0.6rem 0.4rem;
+        min-height: 2.8rem;
     }
     
-    .notification {
-        font-size: 0.75rem;
-        padding: 0.375rem 0.75rem;
-        max-width: 180px;
+    #categoriesContainer {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* Для очень маленьких экранов */
-@media (max-width: 380px) {
-    .notification {
-        max-width: 160px;
-        font-size: 0.7rem;
-        padding: 0.25rem 0.5rem;
-    }
+
+
+.category-carousel-btn {
+    animation: fadeInUp 0.3s ease forwards;
 }
 
-/* Стили для фильтра и пагинации */
-#filterToggleBtn {
-    transition: all 0.3s ease;
-}
+/* Задержка анимации для каждой кнопки */
+.category-carousel-btn:nth-child(1) { animation-delay: 0.05s; }
+.category-carousel-btn:nth-child(2) { animation-delay: 0.1s; }
+.category-carousel-btn:nth-child(3) { animation-delay: 0.15s; }
+.category-carousel-btn:nth-child(4) { animation-delay: 0.2s; }
+.category-carousel-btn:nth-child(5) { animation-delay: 0.25s; }
+.category-carousel-btn:nth-child(6) { animation-delay: 0.3s; }
+.category-carousel-btn:nth-child(7) { animation-delay: 0.35s; }
+.category-carousel-btn:nth-child(8) { animation-delay: 0.4s; }
+.category-carousel-btn:nth-child(9) { animation-delay: 0.45s; }
 
+
+/* Принудительные стили для отладки */
 #filterDropdown {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    z-index: 9999 !important;
+    position: absolute !important;
+    background: #1f2937 !important;
+    border: 1px solid #374151 !important;
 }
 
-.filter-option:first-child {
-    border-radius: 0.5rem 0.5rem 0 0;
+#filterToggleBtn {
+    position: relative !important;
+    z-index: 10000 !important;
 }
 
-.filter-option:last-child {
-    border-radius: 0 0 0.5rem 0.5rem;
+.filter-option {
+    cursor: pointer !important;
+    background: transparent !important;
 }
 
-#loadMoreBtn {
-    transition: all 0.3s ease;
-}
-
-#loadMoreBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* --- Финальная корректировка отступа под футером --- */
-.mobile-content {
-  padding-bottom: 100px !important; /* чуть больше, чем высота футера */
-}
-
-/* Для устройств с безопасной зоной (iPhone и др.) */
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .mobile-content {
-    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
-  }
-
-  .mobile-nav {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-
-.bg-gradient-to-r.from-blue-900\\/30.to-purple-900\\/30 {
-    transition: all 0.3s ease-in-out;
-}
-
-.bg-gradient-to-r.from-blue-900\\/30.to-purple-900\\/30.hidden {
-    opacity: 0;
-    transform: translateY(-10px);
-    height: 0;
-    margin-bottom: 0;
-    padding: 0;
-    overflow: hidden;
+.filter-option:hover {
+    background: #374151 !important;
 }

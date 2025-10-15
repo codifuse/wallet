@@ -91,6 +91,7 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Инициализируем систему фильтрации
     if (typeof initTransactionFilter === 'function') {
+        console.log("Инициализация системы фильтрации транзакций...");
         initTransactionFilter();
     }
     
@@ -341,6 +342,7 @@ async function updateInterfaceAfterTransaction(data) {
 }
 
 // Функция для обновления балансов после добавления транзакции
+// Функция для обновления балансов после добавления транзакции
 function updateBalancesAfterTransaction(type, amount) {
     const totalElement = document.getElementById('totalBalance');
     const incomeElement = document.getElementById('monthIncome');
@@ -378,6 +380,9 @@ function updateBalancesAfterTransaction(type, amount) {
         window.initialBalances.income = newIncome;
         window.initialBalances.expense = newExpense;
     }
+    
+    // ОБНОВЛЯЕМ РЕЗЕРВ
+    updateReserveDisplay();
 }
 
 // Функция для добавления транзакции в список
@@ -1046,10 +1051,10 @@ function showSuccessNotification(message) {
     
     // Создаем уведомление с иконкой
     const notification = document.createElement('div');
-    notification.className = 'bg-green-600/90 text-white text-sm px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-fade-in backdrop-blur-sm';
+    notification.className = 'notification-inline flex items-center px-3 py-1.5 rounded-lg text-sm bg-gray-800/80 backdrop-blur-sm border border-gray-700';
     notification.innerHTML = `
         
-        <span>${message}</span>
+        <span><i class="fas fa-bell mr-2 text-blue-400"></i> ${message}</span>
     `;
     
     // Добавляем в контейнер
@@ -1404,6 +1409,7 @@ async function processTransactionDeletion(transactionId, transactionElement, tra
 }
 
 // Функция для обновления балансов после удаления транзакции
+// Функция для обновления балансов после удаления транзакции
 function updateBalancesAfterDeletion(sign, amountValue) {
     const totalElement = document.getElementById('totalBalance');
     const incomeElement = document.getElementById('monthIncome');
@@ -1442,11 +1448,15 @@ function updateBalancesAfterDeletion(sign, amountValue) {
         window.initialBalances.expense = newExpense;
     }
     
+    // ОБНОВЛЯЕМ РЕЗЕРВ
+    updateReserveDisplay();
+    
     console.log('Балансы обновлены после удаления транзакции:', {
         sign, amountValue,
         newTotal, newIncome, newExpense
     });
 }
+
 
 // Функция проверки пустых состояний (уже есть, но убедимся что она корректна)
 function checkEmptyStates() {
@@ -1551,30 +1561,6 @@ function formatAllAmounts() {
     });
 }
 
-// Добавьте в app.js
-document.addEventListener("DOMContentLoaded", function() {
-    // Предотвращаем скролл body
-    document.body.style.overflow = 'hidden';
-    
-    // Обработчик для предотвращения скролла при достижении границ
-    const mobileContent = document.querySelector('.mobile-content');
-    if (mobileContent) {
-        mobileContent.addEventListener('touchstart', function() {
-            this.style.overflowY = 'auto';
-        });
-        
-        mobileContent.addEventListener('touchend', function() {
-            // Не меняем overflowY, оставляем auto для скролла
-        });
-    }
-    
-    // Предотвращаем скролл body при касании вне контентной области
-    document.addEventListener('touchmove', function(e) {
-        if (!e.target.closest('.mobile-content') && !e.target.closest('.modal-overlay')) {
-            e.preventDefault();
-        }
-    }, { passive: false });
-});
 
 
 // =============================================
@@ -1681,14 +1667,11 @@ let reservePercentage = localStorage.getItem('reservePercentage')
 function updateReserveDisplay() {
     const income = window.initialBalances?.income || 0;
     const reserveAmount = income * (reservePercentage / 100);
+    const reserveElement = document.getElementById('reserveAmount');
 
-    const reserveMain = document.getElementById('reserveAmount');
-    const reserveStat = document.getElementById('reserveAmountStat');
-    const reserveLabel = document.getElementById('reservePercentValue');
-
-    if (reserveMain) reserveMain.textContent = formatAmount(reserveAmount.toFixed(0));
-    if (reserveStat) reserveStat.textContent = formatAmount(reserveAmount.toFixed(0));
-    if (reserveLabel) reserveLabel.textContent = reservePercentage;
+    if (reserveElement) {
+        reserveElement.textContent = formatAmount(reserveAmount.toFixed(0));
+    }
 }
 
 
