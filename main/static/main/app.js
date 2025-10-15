@@ -414,6 +414,9 @@ function updateBalancesAfterTransaction(type, amount) {
     
     // Обновляем резерв
     updateReserveDisplay();
+
+    // Обновляем резерв
+    updateReserveAfterTransaction(type, amount);
 }
 
 // Функция для добавления транзакции в список
@@ -768,9 +771,9 @@ function initColorsGrid() {
     
     const colors = [
         '#ef4444', '#f97316', '#f59e0b', '#eab308',
-        '#84cc16', '#22c55e', '#10b981', '#14b8a6',
-        '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1',
-        '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'
+        '#84cc16', '#22c55e', '#10b981', 
+        '#06b6d4', '#6366f1',
+        '#ec4899'
     ];
     
     colorsGrid.innerHTML = '';
@@ -778,7 +781,7 @@ function initColorsGrid() {
     colors.forEach(color => {
         const colorBtn = document.createElement('button');
         colorBtn.type = 'button';
-        colorBtn.className = 'color-option w-8 h-8 rounded-full border-2 border-gray-600';
+        colorBtn.className = 'color-option w-8 h-8 rounded-full border-2 border-gray-600 mb-3';
         colorBtn.style.backgroundColor = color;
         colorBtn.dataset.color = color;
         
@@ -1492,6 +1495,11 @@ function updateBalancesAfterDeletion(sign, amountValue) {
     
     // Обновляем резерв
     updateReserveDisplay();
+
+    // Обновляем резерв
+    const type = sign === '+' ? 'income' : 'expense';
+    updateReserveAfterTransaction(type, -amountValue); // Отрицательное значение для удаления
+
 }
 
 
@@ -1692,23 +1700,68 @@ async function updateTopCategories() {
 }
 
 
+/// =============================================
+// ОБНОВЛЕНИЕ СТАТИСТИКИ РЕЗЕРВА
 // =============================================
-// РАСЧЁТ И ОТОБРАЖЕНИЕ РЕЗЕРВА
-// =============================================
-
-// Глобальный процент резерва (по умолчанию 10%)
-let reservePercentage = localStorage.getItem('reservePercentage') 
-    ? parseFloat(localStorage.getItem('reservePercentage')) 
-    : 10;
-
 function updateReserveDisplay() {
-    const income = window.initialBalances?.income || 0;
-    const reserveAmount = income * (reservePercentage / 100);
+    if (!window.initialBalances || !window.initialReservePercentage || window.initialTargetReserve === undefined) return;
+    
+    const income = window.initialBalances.income || 0;
+    const reservePercentage = window.initialReservePercentage;
+    const targetReserve = window.initialTargetReserve || 0;
+    
+    // Расчет текущего резерва
+    const currentReserve = income * (reservePercentage / 100);
+    
+    // Расчет прогресса
+    const progress = targetReserve > 0 ? Math.min(100, (currentReserve / targetReserve) * 100) : 0;
+    const remaining = Math.max(0, targetReserve - currentReserve);
+    
+    // Обновляем отображение в основном блоке
     const reserveElement = document.getElementById('reserveAmount');
-
     if (reserveElement) {
-        reserveElement.textContent = formatAmount(reserveAmount.toFixed(0));
+        reserveElement.textContent = formatAmount(Math.round(currentReserve));
     }
+    
+    // Обновляем отображение в статистике
+    updateReserveStats(currentReserve, progress, remaining);
+}
+
+function updateReserveStats(currentReserve, progress, remaining) {
+    // Обновляем элементы в статистике
+    const elements = {
+        'currentReserveAmount': formatAmount(Math.round(currentReserve)),
+        'reservePercentageDisplay': window.initialReservePercentage,
+        'reserveProgressText': progress.toFixed(1) + '%',
+        'monthlyReserveAmount': formatAmount(Math.round(currentReserve)), // Используем текущий резерв
+        'totalReserveAmount': formatAmount(Math.round(currentReserve)),
+        'targetReserveAmount': formatAmount(Math.round(window.initialTargetReserve)) + ' с',
+        'remainingToTarget': formatAmount(Math.round(remaining)) + ' с'
+    };
+    
+    // Обновляем все элементы
+    Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = elements[id];
+        }
+    });
+    
+    // Обновляем прогресс-бар
+    const progressBar = document.getElementById('reserveProgressBar');
+    if (progressBar) {
+        progressBar.style.width = progress + '%';
+    }
+}
+
+// Функция для обновления резерва после транзакции
+function updateReserveAfterTransaction(type, amount) {
+    if (type === 'income') {
+        // При доходе увеличиваем резерв
+        const reserveIncrease = amount * (window.initialReservePercentage / 100);
+        // Здесь можно добавить логику для обновления данных
+    }
+    updateReserveDisplay();
 }
 
 
@@ -1720,11 +1773,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!reserveInput || !saveReserveBtn) return;
 
-    // Устанавливаем текущее значение процента
-    const savedValue = localStorage.getItem('reservePercentage');
-    if (savedValue !== null) {
-        reserveInput.value = savedValue;
-    }
+
 
     saveReserveBtn.addEventListener('click', () => {
         const newValue = parseFloat(reserveInput.value);
@@ -1815,4 +1864,237 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Загружаем актуальные категории при загрузке страницы
     updateGlobalCategories();
+});
+
+
+
+
+// Обработчики для сохранения настроек резерва
+document.addEventListener("DOMContentLoaded", function() {
+    // Сохранение процента резерва
+    const saveReserveBtn = document.getElementById('saveReserveBtn');
+    if (saveReserveBtn) {
+        saveReserveBtn.addEventListener('click', saveReservePercentage);
+    }
+    
+    // Сохранение целевого резерва
+    const saveTargetReserveBtn = document.getElementById('saveTargetReserveBtn');
+    if (saveTargetReserveBtn) {
+        saveTargetReserveBtn.addEventListener('click', saveTargetReserve);
+    }
+});
+
+async function saveReservePercentage() {
+    const input = document.getElementById('reservePercentageInput');
+    const newValue = parseInt(input.value);
+    
+    if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+        alert('Введите значение от 0 до 100');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('reserve_percentage', newValue);
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    try {
+        const response = await fetch('/update_reserve_percentage/', {
+            method: "POST",
+            headers: { 
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.initialReservePercentage = newValue;
+            updateReserveDisplay();
+            showSuccessNotification('Успешно обновлено!');
+        } else {
+            alert(data.error || "Ошибка при сохранении");
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert("Произошла ошибка при отправке формы");
+    }
+}
+
+async function saveTargetReserve() {
+    const input = document.getElementById('targetReserveInput');
+    const newValue = parseInt(input.value);
+    
+    if (isNaN(newValue) || newValue < 0) {
+        alert('Введите корректную сумму');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('target_reserve', newValue);
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    try {
+        const response = await fetch('/update_target_reserve/', {
+            method: "POST",
+            headers: { 
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.initialTargetReserve = newValue;
+            updateReserveDisplay();
+            showSuccessNotification('Успешно обновлен!');
+            
+        } else {
+            alert(data.error || "Ошибка при сохранении");
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert("Произошла ошибка при отправке формы");
+    }
+}
+
+
+// =============================================
+// ОБРАБОТКА СОХРАНЕНИЯ ПРОЦЕНТА РЕЗЕРВА И ЦЕЛЕВОГО РЕЗЕРВА
+// =============================================
+
+document.addEventListener("DOMContentLoaded", function() {
+    const reserveInput = document.getElementById('reservePercentageInput');
+    const saveReserveBtn = document.getElementById('saveReserveBtn');
+    const targetReserveInput = document.getElementById('targetReserveInput');
+    const saveTargetReserveBtn = document.getElementById('saveTargetReserveBtn');
+
+    // Обработчик для сохранения процента резерва
+    if (saveReserveBtn && reserveInput) {
+        saveReserveBtn.addEventListener('click', async function() {
+            const newValue = parseInt(reserveInput.value);
+            if (isNaN(newValue) || newValue < 0 || newValue > 100) {
+                alert('Введите значение от 0 до 100');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('reserve_percentage', newValue);
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            try {
+                const response = await fetch('/update_reserve_percentage/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Обновляем глобальную переменную
+                    window.initialReservePercentage = newValue;
+
+                    // Обновляем отображение резерва
+                    updateReserveDisplay();
+
+                    // Обновляем отображение в меню
+                    document.getElementById('currentReservePercent').textContent = newValue + '%';
+
+                    // Показываем уведомление об успехе
+                    showSuccessNotification('Успешно обновлено!');
+
+                    // Меняем стиль кнопки на успех
+                    saveReserveBtn.disabled = true;
+                    saveReserveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Сохранено';
+                    saveReserveBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
+                    saveReserveBtn.classList.add('bg-green-600');
+
+                    // Возвращаем обратно через 2 секунды
+                    setTimeout(() => {
+                        saveReserveBtn.disabled = false;
+                        saveReserveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
+                        saveReserveBtn.classList.remove('bg-green-600');
+                        saveReserveBtn.classList.add('bg-blue-600', 'hover:bg-blue-500');
+                    }, 2000);
+                } else {
+                    alert(data.error || 'Ошибка при сохранении');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка соединения');
+            }
+        });
+    }
+
+    // Обработчик для сохранения целевого резерва
+    if (saveTargetReserveBtn && targetReserveInput) {
+        saveTargetReserveBtn.addEventListener('click', async function() {
+            const newValue = parseFloat(targetReserveInput.value);
+            if (isNaN(newValue) || newValue < 0) {
+                alert('Введите корректное значение');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('target_reserve', newValue);
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            try {
+                const response = await fetch('/update_target_reserve/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Обновляем глобальную переменную
+                    window.initialTargetReserve = newValue;
+
+                    // Обновляем отображение резерва
+                    updateReserveDisplay();
+
+                    // Обновляем отображение в меню
+                    document.getElementById('currentTargetReserve').textContent = formatAmount(newValue) + ' с';
+
+                    // Показываем уведомление об успехе
+                    showSuccessNotification('Успешно обновлен!');
+
+                    // Меняем стиль кнопки на успех
+                    saveTargetReserveBtn.disabled = true;
+                    saveTargetReserveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Сохранено';
+                    saveTargetReserveBtn.classList.remove('bg-purple-600', 'hover:bg-purple-500');
+                    saveTargetReserveBtn.classList.add('bg-green-600');
+
+                    // Возвращаем обратно через 2 секунды
+                    setTimeout(() => {
+                        saveTargetReserveBtn.disabled = false;
+                        saveTargetReserveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
+                        saveTargetReserveBtn.classList.remove('bg-green-600');
+                        saveTargetReserveBtn.classList.add('bg-purple-600', 'hover:bg-purple-500');
+                    }, 2000);
+                } else {
+                    alert(data.error || 'Ошибка при сохранении');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка соединения');
+            }
+        });
+    }
 });

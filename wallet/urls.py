@@ -39,4 +39,9 @@ urlpatterns = [
     path('delete_note/<int:note_id>/', views.delete_note, name='delete_note'),
     path('mark_note_as_reminded/<int:note_id>/', views.mark_note_as_reminded, name='mark_note_as_reminded'),
     path('get_pending_reminders/', views.get_pending_reminders, name='get_pending_reminders'),
+    path('update_reserve_percentage/', views.update_reserve_percentage, name='update_reserve_percentage'),
+    path('update_target_reserve/', views.update_target_reserve, name='update_target_reserve'),
+    path('update_reserve_percentage/', views.update_reserve_percentage, name='update_reserve_percentage'),
+    path('update_target_reserve/', views.update_target_reserve, name='update_target_reserve'),
+    
 ]

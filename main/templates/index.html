@@ -50,7 +50,7 @@
             <div class="relative">
                 <img id="logo2" src="{% static 'main/ico.svg' %}" alt="Koinda" class="h-10">
                 <span class="absolute -top-1 -right-5 text-[10px] text-gray-400 font-medium">
-                    v1.22
+                    v1.24
                 </span>
             </div>
         </div>
@@ -224,204 +224,224 @@
         <div class="mobile-content">
 
 
-            <!-- Резерв и сбережения -->
-            <div class="card-gradient rounded-2xl p-4 mb-4">
-                <h2 class="text-lg font-bold mb-4 flex items-center">
-                    <i class="fas fa-piggy-bank text-blue-400 mr-2"></i>
-                    Резерв и сбережения
-                </h2>
-                
-                <div class="space-y-4">
-                    <!-- Текущий резерв -->
-                    <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-4 border border-blue-800/30">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="text-sm text-gray-300">Текущий резерв</p>
-                                <p class="text-2xl font-bold text-blue-400 mt-1">
-                                    <span id="currentReserve">0</span> <span class="currency-symbol text-lg">с</span>
-                                </p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm text-gray-300">Процент от доходов</p>
-                                <p class="text-lg font-bold text-green-400 mt-1">
-                                    <span id="reservePercentage">10</span>%
-                                </p>
-                            </div>
-                        </div>
-                        
-                        <!-- Прогресс резерва -->
-                        <div class="mt-4">
-                            <div class="flex justify-between text-sm text-gray-400 mb-1">
-                                <span>Прогресс накопления</span>
-                                <span id="reserveProgressText">0%</span>
-                            </div>
-                            <div class="w-full bg-gray-700 rounded-full h-2">
-                                <div id="reserveProgressBar" class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Статистика резерва -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="bg-gray-800/40 rounded-lg p-3 text-center">
-                            <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
-                                <i class="fas fa-calendar-plus text-blue-400"></i>
-                            </div>
-                            <p class="text-xs text-gray-400">Отложено в этом месяце</p>
-                            <p class="text-sm font-bold text-blue-400 mt-1">
-                                +<span id="monthlyReserve">0</span>
-                            </p>
-                        </div>
-                        
-                        <div class="bg-gray-800/40 rounded-lg p-3 text-center">
-                            <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-2">
-                                <i class="fas fa-chart-line text-green-400"></i>
-                            </div>
-                            <p class="text-xs text-gray-400">Всего накоплено</p>
-                            <p class="text-sm font-bold text-green-400 mt-1">
-                                <span id="totalSaved">0</span>
-                            </p>
-                        </div>
-                    </div>
+          <!-- Обновленный блок Резерв и сбережения в вкладке статистики -->
+<div class="card-gradient rounded-2xl p-4 mb-4">
+    <h2 class="text-lg font-bold mb-4 flex items-center">
+        <i class="fas fa-piggy-bank text-blue-400 mr-2"></i>
+        Резерв и сбережения
+    </h2>
+    
+    <div class="space-y-4">
+        <!-- Текущий резерв -->
+        <div class="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-4 border border-blue-800/30">
+            <div class="flex justify-between items-center">
+                <div>
+                    <p class="text-sm text-gray-300">Текущий резерв</p>
+                    <p class="text-2xl font-bold text-blue-400 mt-1">
+                        <span id="currentReserveAmount">{{ current_reserve|floatformat:0 }}</span> 
+                        <span class="currency-symbol text-lg">с</span>
+                    </p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-300">Процент от доходов</p>
+                    <p class="text-lg font-bold text-green-400 mt-1">
+                        <span id="reservePercentageDisplay">{{ reserve_percentage }}</span>%
+                    </p>
                 </div>
             </div>
+            
+            <!-- Прогресс резерва -->
+            <div class="mt-4">
+                <div class="flex justify-between text-sm text-gray-400 mb-1">
+                    <span>Прогресс накопления</span>
+                    <span id="reserveProgressText">{{ progress_percentage|floatformat:1 }}%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div id="reserveProgressBar" class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500" 
+                         style="width: {{ progress_percentage }}%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Статистика резерва -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gray-800/40 rounded-lg p-3 text-center">
+                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-calendar-plus text-blue-400"></i>
+                </div>
+                <p class="text-xs text-gray-400">Отложено в этом месяце</p>
+                <p class="text-sm font-bold text-blue-400 mt-1">
+                    +<span id="monthlyReserveAmount">{{ monthly_reserve|floatformat:0 }}</span>
+                </p>
+            </div>
+            
+            <div class="bg-gray-800/40 rounded-lg p-3 text-center">
+                <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-chart-line text-green-400"></i>
+                </div>
+                <p class="text-xs text-gray-400">Всего накоплено</p>
+                <p class="text-sm font-bold text-green-400 mt-1">
+                    <span id="totalReserveAmount">{{ current_reserve|floatformat:0 }}</span>
+                </p>
+            </div>
+        </div>
 
+        <!-- Дополнительная информация -->
+        <div class="bg-gray-800/40 rounded-lg p-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-gray-300">Целевой резерв</span>
+                <span class="text-sm font-bold text-purple-400" id="targetReserveAmount">
+                    {{ target_reserve|floatformat:0 }} с
+                </span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-300">Осталось до цели</span>
+                <span class="text-sm font-bold text-yellow-400" id="remainingToTarget">
+                    {{ remaining_to_target|floatformat:0 }} с
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
             <!-- Анализ расходов по категориям -->
-            <div class="card-gradient rounded-2xl p-4 mb-4">
-                <h2 class="text-lg font-bold mb-4 flex items-center">
-                    <i class="fas fa-chart-pie text-purple-400 mr-2"></i>
-                    Анализ расходов
-                </h2>
+          
+         <!-- 
+<div class="card-gradient rounded-2xl p-4 mb-4">
+    <h2 class="text-lg font-bold mb-4 flex items-center">
+        <i class="fas fa-chart-pie text-purple-400 mr-2"></i>
+        Анализ расходов
+    </h2> 
+    
+    <div class="space-y-4">
+        
+        <div class="flex items-center justify-center py-4">
+            <div class="relative w-40 h-40">
                 
-                <div class="space-y-4">
-                    <!-- Круговая диаграмма (упрощенная версия) -->
-                    <div class="flex items-center justify-center py-4">
-                        <div class="relative w-40 h-40">
-                            <!-- Здесь будет SVG или Canvas для круговой диаграммы -->
-                            <div class="absolute inset-0 flex items-center justify-center">
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold text-white" id="expensePercentage">0%</div>
-                                    <div class="text-xs text-gray-400">от доходов</div>
-                                </div>
-                            </div>
-                            <div class="w-40 h-40 rounded-full border-8 border-gray-700">
-                                <!-- Динамические сегменты будут добавляться через JS -->
-                            </div>
-                        </div>
-                    </div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-white" id="expensePercentage">0%</div>
+                        <div class="text-xs text-gray-400">от доходов</div>
+                    </div> 
+                </div>
+                <div class="w-40 h-40 rounded-full border-8 border-gray-700">
                     
-                    <!-- Легенда категорий -->
-                    <div class="space-y-3" id="expenseCategories">
-                        <!-- Категории будут добавляться динамически -->
-                        <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-red-500 mr-3"></div>
-                                <div>
-                                    <p class="font-medium text-sm">Еда</p>
-                                    <p class="text-xs text-gray-400">35% расходов</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-bold text-red-400 text-sm">-2,450 <span class="currency-symbol text-xs">с</span></p>
-                                <p class="text-xs text-gray-400">12 транзакций</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
-
-            <!-- Рекомендации по экономии -->
-            <div class="card-gradient rounded-2xl p-4 mb-4">
-                <h2 class="text-lg font-bold mb-4 flex items-center">
-                    <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
-                    Рекомендации
-                </h2>
-                
-                <div class="space-y-3" id="recommendationsList">
-                    <!-- Рекомендация 1 -->
-                    <div class="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl p-3 border border-yellow-500/20">
-                        <div class="flex items-start space-x-3">
-                            <div class="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                                <i class="fas fa-utensils text-yellow-400 text-sm"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-yellow-400 text-sm mb-1">Снижение расходов на еду</h3>
-                                <p class="text-xs text-gray-300">
-                                    Вы тратите 35% доходов на еду. Попробуйте планировать покупки заранее.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Рекомендация 2 -->
-                    <div class="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl p-3 border border-blue-500/20">
-                        <div class="flex items-start space-x-3">
-                            <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                                <i class="fas fa-piggy-bank text-blue-400 text-sm"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-semibold text-blue-400 text-sm mb-1">Увеличьте резерв</h3>
-                                <p class="text-xs text-gray-300">
-                                    Откладывайте 15% вместо 10% для быстрого достижения финансовой цели.
-                                </p>
-                            </div>
-                        </div>
+        </div>
+        
+        
+        <div class="space-y-3" id="expenseCategories">
+            
+            <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 rounded-full bg-red-500 mr-3"></div>
+                    <div>
+                        <p class="font-medium text-sm">Еда</p>
+                        <p class="text-xs text-gray-400">35% расходов</p>
                     </div>
                 </div>
-                
-                <!-- Кнопка для получения дополнительных рекомендаций -->
-                <button class="w-full mt-4 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center">
-                    <i class="fas fa-robot mr-2"></i>
-                    Получить AI-рекомендации
-                </button>
-            </div>
-
-            <!-- Сравнение периодов -->
-            <div class="card-gradient rounded-2xl p-4">
-                <h2 class="text-lg font-bold mb-4 flex items-center">
-                    <i class="fas fa-chart-bar text-green-400 mr-2"></i>
-                    Сравнение с прошлым периодом
-                </h2>
-                
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="text-center">
-                            <p class="text-xs text-gray-400 mb-1">Текущий месяц</p>
-                            <div class="text-lg font-bold text-green-400">+15,000</div>
-                            <div class="text-xs text-gray-400">доходы</div>
-                        </div>
-                        
-                        <div class="text-center">
-                            <p class="text-xs text-gray-400 mb-1">Прошлый месяц</p>
-                            <div class="text-lg font-bold text-blue-400">+13,400</div>
-                            <div class="text-xs text-gray-400">доходы</div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-800/40 rounded-xl p-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm text-gray-300">Рост доходов</span>
-                            <span class="text-sm font-bold text-green-400">+12%</span>
-                        </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2">
-                            <div class="bg-green-500 h-2 rounded-full" style="width: 65%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-800/40 rounded-xl p-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-sm text-gray-300">Снижение расходов</span>
-                            <span class="text-sm font-bold text-red-400">-5%</span>
-                        </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2">
-                            <div class="bg-red-500 h-2 rounded-full" style="width: 35%"></div>
-                        </div>
-                    </div>
+                <div class="text-right">
+                    <p class="font-bold text-red-400 text-sm">-2,450 <span class="currency-symbol text-xs">с</span></p>
+                    <p class="text-xs text-gray-400">12 транзакций</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+
+<div class="card-gradient rounded-2xl p-4 mb-4">
+    <h2 class="text-lg font-bold mb-4 flex items-center">
+        <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+        Рекомендации
+    </h2>
+    
+    <div class="space-y-3" id="recommendationsList">
+        
+        <div class="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl p-3 border border-yellow-500/20">
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <i class="fas fa-utensils text-yellow-400 text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-yellow-400 text-sm mb-1">Снижение расходов на еду</h3>
+                    <p class="text-xs text-gray-300">
+                        Вы тратите 35% доходов на еду. Попробуйте планировать покупки заранее.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        
+        <div class="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl p-3 border border-blue-500/20">
+            <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                    <i class="fas fa-piggy-bank text-blue-400 text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-blue-400 text-sm mb-1">Увеличьте резерв</h3>
+                    <p class="text-xs text-gray-300">
+                        Откладывайте 15% вместо 10% для быстрого достижения финансовой цели.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <button class="w-full mt-4 bg-gray-800 hover:bg-gray-700 text-gray-300 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center">
+        <i class="fas fa-robot mr-2"></i>
+        Получить AI-рекомендации
+    </button>
+</div>
+
+
+<div class="card-gradient rounded-2xl p-4">
+    <h2 class="text-lg font-bold mb-4 flex items-center">
+        <i class="fas fa-chart-bar text-green-400 mr-2"></i>
+        Сравнение с прошлым периодом
+    </h2>
+    
+    <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+            <div class="text-center">
+                <p class="text-xs text-gray-400 mb-1">Текущий месяц</p>
+                <div class="text-lg font-bold text-green-400">+15,000</div>
+                <div class="text-xs text-gray-400">доходы</div>
+            </div>
+            
+            <div class="text-center">
+                <p class="text-xs text-gray-400 mb-1">Прошлый месяц</p>
+                <div class="text-lg font-bold text-blue-400">+13,400</div>
+                <div class="text-xs text-gray-400">доходы</div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800/40 rounded-xl p-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-gray-300">Рост доходов</span>
+                <span class="text-sm font-bold text-green-400">+12%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full" style="width: 65%"></div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800/40 rounded-xl p-3">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-gray-300">Снижение расходов</span>
+                <span class="text-sm font-bold text-red-400">-5%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-2">
+                <div class="bg-red-500 h-2 rounded-full" style="width: 35%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+-->
+        </div>
+    </div>
+</div> 
         
 <!-- Заметки вкладка -->
 <div class="mobile-tab" id="tab-notes">
@@ -632,21 +652,26 @@
         </div>
     </div>
 
-    <!-- Модальное окно добавления категории -->
-    <div id="categoryModal" class="modal-overlay backdrop-blur-sm hidden">
-        <div class="modal-content">
+
+
+
+
+
+ <div id="categoryModal" class="fixed inset-0 backdrop-blur-sm hidden z-[1000] bg-black bg-opacity-60 flex items-center justify-center p-4">
+        <div class="modal-content bg-gray-800 rounded-2xl w-full max-w-sm mx-auto">
+          
+            <!-- Заголовок -->
+            <div class="p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-center">Добавить категорию</h2>
+            </div>
+
             <div class="p-6">
-                <div class="flex justify-between items-start mb-6">
-                    <h2 class="text-2xl font-bold">Новая категория</h2>
-                    <button class="close-modal text-gray-400 hover:text-white text-xl" data-modal="category">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
+          
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-gray-300 mb-2">Название категории</label>
-                        <input type="text" placeholder="Например: Одежда" class="input-field" id="categoryNameInput">
+                     
+                        <input type="text" placeholder="Название категории" class="input-field" id="categoryNameInput">
                     </div>
                     
                     <div>
@@ -676,25 +701,26 @@
         </div>
     </div>
 
-   <!-- Модальное окно добавления/редактирования заметки -->
-<div id="noteModal" class="modal-overlay backdrop-blur-sm hidden">
-    <div class="modal-content">
-        <div class="p-6">
-            <div class="flex justify-between items-start mb-6">
-                <h2 class="text-2xl font-bold" id="noteModalTitle">Новая заметка</h2>
-                <button class="close-modal text-gray-400 hover:text-white text-xl" data-modal="note">
-                    <i class="fas fa-times"></i>
-                </button>
+
+<div id="noteModal" class="fixed inset-0 backdrop-blur-sm hidden z-[1000] bg-black bg-opacity-60 flex items-center justify-center p-4">
+        <div class="modal-content bg-gray-800 rounded-2xl w-full max-w-sm mx-auto">
+          
+            <!-- Заголовок -->
+            <div class="p-4 border-b border-gray-700">
+                <h2 class="text-xl font-bold text-center" id="noteModalTitle">Новая заметка</h2>
             </div>
+
+            <div class="p-6">
+
             
             <div class="space-y-4">
                 <div>
-                    <label class="block text-gray-300 mb-2">Название заметки</label>
+                   
                     <input type="text" placeholder="Введите название" class="input-field" id="noteTitleInput">
                 </div>
                 
                 <div>
-                    <label class="block text-gray-300 mb-2">Текст заметки</label>
+                  
                     <textarea placeholder="Введите текст заметки" rows="6" class="input-field" id="noteContentInput"></textarea>
                 </div>
                 
@@ -828,47 +854,82 @@
                     </div>
                 </div>
                 
-                <!-- Настройка процента резерва -->
-                <div class="bg-gray-700/60 rounded-xl p-4 mb-6 border border-gray-600/50">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                <i class="fas fa-piggy-bank text-blue-400 text-sm"></i>
-                            </div>
-                            <h3 class="text-base font-semibold text-gray-200">Резерв</h3>
-                        </div>
-                        <span id="currentReservePercent" class="text-sm text-blue-400 font-medium"></span>
-                    </div>
-
-                    <p class="text-sm text-gray-400 mb-3">
-                        Укажите, сколько процентов от доходов автоматически откладывать в резерв.
-                    </p>
-
-                    <div class="flex items-center space-x-3">
-                        <input
-                            type="number"
-                            id="reservePercentageInput"
-                            min="0"
-                            max="100"
-                            class="w-24 bg-gray-800 border border-gray-700 rounded-lg p-2 text-center text-white text-lg font-semibold focus:border-blue-500 focus:ring-0 outline-none transition-all"
-                            value="10"
-                        >
-                        <button
-                            id="saveReserveBtn"
-                            class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all"
-                        >
-                            <i class="fas fa-save mr-2"></i>Сохранить
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Кнопка закрыть -->
-                <button onclick="toggleMenuModal()" class="mt-6 w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-medium transition-colors">
-                    Закрыть
-                </button>
+  <!-- Настройка процента резерва -->
+<div class="bg-gray-700/60 rounded-xl p-4 mb-6 border border-gray-600/50">
+    <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <i class="fas fa-piggy-bank text-blue-400 text-sm"></i>
             </div>
+            <h3 class="text-base font-semibold text-gray-200">Резерв</h3>
+        </div>
+        <span id="currentReservePercent" class="text-sm text-blue-400 font-medium">{{ reserve_percentage }}%</span>
+    </div>
+
+    <p class="text-sm text-gray-400 mb-3">
+        Укажите, сколько процентов от доходов автоматически откладывать в резерв.
+    </p>
+
+    <div class="flex items-center space-x-3 mb-4">
+        <input
+            type="number"
+            id="reservePercentageInput"
+            min="0"
+            max="100"
+            class="w-24 bg-gray-800 border border-gray-700 rounded-lg p-2 text-center text-white text-lg font-semibold focus:border-blue-500 focus:ring-0 outline-none transition-all"
+            value="{{ reserve_percentage }}" 
+        >
+        <button
+            id="saveReserveBtn"
+            class="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all"
+        >
+            <i class="fas fa-save mr-2"></i>Сохранить
+        </button>
+    </div>
+
+
+
+    <!-- Новый блок для целевого резерва -->
+    <div class="pt-4 border-t border-gray-600/50">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <i class="fas fa-bullseye text-purple-400 text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-200">Целевой резерв</h3>
+            </div>
+            <span id="currentTargetReserve" class="text-sm text-purple-400 font-medium">{{ target_reserve|floatformat:0 }} с</span>
+        </div>
+
+        <p class="text-sm text-gray-400 mb-3">
+            Укажите сумму, которую хотите накопить.
+        </p>
+
+        <div class="flex items-center space-x-3">
+            <input
+                type="number"
+                id="targetReserveInput"
+                min="0"
+                step="1000"
+                class="w-24 bg-gray-800 border border-gray-700 rounded-lg p-2 text-center text-white text-lg font-semibold focus:border-purple-500 focus:ring-0 outline-none transition-all"
+                value="{{ target_reserve|floatformat:0 }}"
+            >
+            <button
+                id="saveTargetReserveBtn"
+                class="flex-1 bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all"
+            >
+                <i class="fas fa-save mr-2"></i>Сохранить
+            </button>
         </div>
     </div>
+    
+</div>
+
+
+<button onclick="toggleMenuModal()" class="mt-6 w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-medium transition-colors">
+                    Закрыть
+                </button>
+
 
     <!-- Модальное окно смены пароля -->
     <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
@@ -1087,6 +1148,23 @@
     </script>
 
   <script>
+
+     // Передача процента резерва из Django в JavaScript
+    window.initialReservePercentage = {{ reserve_percentage }};
+    window.initialTargetReserve = {{ target_reserve }};
+
+
+    console.log('Инициализированы глобальные переменные:', {
+        categories: window.categories,
+        ADD_TRANSACTION_URL: window.ADD_TRANSACTION_URL,
+        initialBalances: window.initialBalances,
+        isNewUser: window.isNewUser,
+        initialReservePercentage: window.initialReservePercentage,
+        initialTargetReserve: window.initialTargetReserve
+    });
+
+
+    
     // Передаем категории из Django в JavaScript
     window.categories = [
         {% for cat in categories %}

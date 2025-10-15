@@ -50,6 +50,10 @@ def index(request):
     expense = expense_result['total'] or Decimal('0')
     total = income - expense
     
+    # Получаем процент резерва из профиля пользователя
+    reserve_percentage = request.user.userprofile.reserve_percentage
+    target_reserve = request.user.userprofile.target_reserve
+
     # Проверяем, является ли это первым входом (новый пользователь)
     is_new_user = request.session.get('is_new_user', False)
     if is_new_user:
@@ -59,6 +63,38 @@ def index(request):
     # Проверяем, есть ли у пользователя транзакции
     has_transactions = transactions.exists()
 
+    # РАСЧЕТЫ ДЛЯ СТАТИСТИКИ РЕЗЕРВА
+    now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Доходы за текущий месяц для расчета резерва
+    month_income = Transaction.objects.filter(
+        user=request.user,
+        type='income',
+        created_at__gte=month_start
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    # Текущий резерв (процент от всех доходов)
+    total_income_all_time = Transaction.objects.filter(
+        user=request.user,
+        type='income'
+    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    
+    # ИСПРАВЛЕНИЕ: Используем Decimal для всех расчетов
+    reserve_percentage_decimal = Decimal(str(reserve_percentage))
+    current_reserve = total_income_all_time * (reserve_percentage_decimal / Decimal('100'))
+    monthly_reserve = month_income * (reserve_percentage_decimal / Decimal('100'))
+    
+    # Прогресс к цели
+    progress_percentage = 0
+    remaining_to_target = target_reserve
+    
+    # ИСПРАВЛЕНИЕ: Преобразуем target_reserve в Decimal для расчетов
+    target_reserve_decimal = Decimal(str(target_reserve))
+    if target_reserve_decimal > 0:
+        progress_percentage = float(min(100, (current_reserve / target_reserve_decimal) * Decimal('100')))
+        remaining_to_target = max(Decimal('0'), target_reserve_decimal - current_reserve)
+
     return render(request, 'index.html', {
         'categories': categories,
         'transactions': transactions,
@@ -66,8 +102,70 @@ def index(request):
         'expense': expense,
         'total': total,
         'is_new_user': is_new_user,
-        'has_transactions': has_transactions,  
+        'has_transactions': has_transactions,
+        'reserve_percentage': reserve_percentage,
+        'target_reserve': target_reserve,
+        # Новые данные для статистики
+        'current_reserve': current_reserve,
+        'monthly_reserve': monthly_reserve,
+        'progress_percentage': progress_percentage,
+        'remaining_to_target': remaining_to_target,
+        'total_income_all_time': total_income_all_time,
     })
+
+
+
+@login_required
+def update_target_reserve(request):
+    if request.method == 'POST':
+        try:
+            target_reserve = request.POST.get('target_reserve')
+            if target_reserve is None:
+                return JsonResponse({'success': False, 'error': 'Не указана цель'})
+            
+            target_reserve = Decimal(target_reserve)
+            if target_reserve < 0:
+                return JsonResponse({'success': False, 'error': 'Цель должна быть положительной'})
+            
+            # Обновляем целевой резерв в профиле пользователя
+            profile = request.user.userprofile
+            profile.target_reserve = target_reserve
+            profile.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Неверный метод запроса'})
+
+
+
+
+
+@login_required
+def update_reserve_percentage(request):
+    if request.method == 'POST':
+        try:
+            new_percentage = request.POST.get('reserve_percentage')
+            if new_percentage is None:
+                return JsonResponse({'success': False, 'error': 'Не указан процент'})
+            
+            new_percentage = int(new_percentage)
+            if new_percentage < 0 or new_percentage > 100:
+                return JsonResponse({'success': False, 'error': 'Процент должен быть от 0 до 100'})
+            
+            # Обновляем процент резерва в профиле пользователя
+            profile = request.user.userprofile
+            profile.reserve_percentage = new_percentage
+            profile.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Неверный метод запроса'})
+
+
 
 @login_required
 def add_transaction(request):
@@ -663,3 +761,4 @@ def get_pending_reminders(request):
         })
     
     return JsonResponse({"reminders": reminders_data})
+

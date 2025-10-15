@@ -326,49 +326,6 @@ function showEmptyState() {
 }
 
 
-// Обновляем функцию после добавления транзакции
-// Обновляем функцию после добавления транзакции
-async function updateInterfaceAfterTransaction(data) {
-    // 1. Обновляем балансы
-    updateBalancesAfterTransaction(data.transaction_type, data.amount);
-
-    // 2. Если активна категория "Все" или категория новой транзакции, добавляем ее
-    if (currentCategory === 'all' || currentCategory == data.transaction.category_id) {
-        addTransactionToList(data.transaction, true);
-
-        // 3. Скрываем пустые состояния
-        hideEmptyStates();
-
-        // 4. Проверяем на сервере, есть ли дополнительные транзакции (страница 2)
-        const loadMoreContainer = document.getElementById('loadMoreContainer');
-        try {
-            const resp = await fetch(`/get_transactions/?filter=${currentFilter}&page=2&limit=${PAGE_SIZE}&category=${currentCategory}`);
-            if (resp.ok) {
-                const info = await resp.json();
-                // Показываем кнопку только если сервер говорит, что есть ещё
-                if (info.success && info.has_more) {
-                    loadMoreContainer.classList.remove('hidden');
-                    hasMoreTransactions = true;
-                } else if (info.success && info.transactions && info.transactions.length > 0) {
-                    // На всякий случай — если сервер не заполнил has_more, но есть элементы
-                    loadMoreContainer.classList.remove('hidden');
-                    hasMoreTransactions = true;
-                } else {
-                    loadMoreContainer.classList.add('hidden');
-                    hasMoreTransactions = false;
-                }
-            } else {
-                // При ошибке сервера — прячем кнопку (безопасный вариант)
-                loadMoreContainer.classList.add('hidden');
-                hasMoreTransactions = false;
-            }
-        } catch (err) {
-            console.error('Ошибка проверки наличия дополнительных транзакций:', err);
-            loadMoreContainer.classList.add('hidden');
-            hasMoreTransactions = false;
-        }
-    }
-}
 
 
 // Функция для принудительного обновления вкладок извне
@@ -388,11 +345,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-
 // В конце history_sort.js убедитесь, что есть:
 window.initTransactionFilter = initTransactionFilter;
 window.loadTransactions = loadTransactions;
 window.updateCategoryTabsHandlers = updateCategoryTabsHandlers;
 window.refreshCategoryTabs = refreshCategoryTabs;
 window.checkEmptyStatesAfterChange = checkEmptyStatesAfterChange;
-window.updateInterfaceAfterTransaction = updateInterfaceAfterTransaction; // добавьте эту строку
+
+
