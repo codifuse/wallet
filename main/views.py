@@ -34,6 +34,8 @@ def create_default_categories(user):
             defaults={'icon': cat_data['icon'], 'color': cat_data['color']}
         )
 
+
+
 @login_required
 def index(request):
     # Создаем категории по умолчанию
@@ -42,13 +44,17 @@ def index(request):
     categories = Category.objects.filter(user=request.user)
     transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')
     
-    # Рассчитываем балансы используя агрегацию для точности
+    # РАСЧЕТ БАЛАНСОВ С УЧЕТОМ РЕЗЕРВА
     income_result = transactions.filter(type='income').aggregate(total=Sum('amount'))
     expense_result = transactions.filter(type='expense').aggregate(total=Sum('amount'))
+    reserve_result = transactions.filter(type='income').aggregate(total=Sum('reserve_amount'))
     
     income = income_result['total'] or Decimal('0')
     expense = expense_result['total'] or Decimal('0')
-    total = income - expense
+    total_reserve = reserve_result['total'] or Decimal('0')
+    
+    # ОСНОВНОЙ БАЛАНС: общая сумма минус накопленный резерв
+    total = income - expense - total_reserve
     
     # Получаем процент резерва из профиля пользователя
     reserve_percentage = request.user.userprofile.reserve_percentage
@@ -67,33 +73,24 @@ def index(request):
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     
-    # Доходы за текущий месяц для расчета резерва
-    month_income = Transaction.objects.filter(
+    # Резерв за текущий месяц (сумма reserve_amount за месяц)
+    month_reserve_result = Transaction.objects.filter(
         user=request.user,
         type='income',
         created_at__gte=month_start
-    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+    ).aggregate(total=Sum('reserve_amount'))
+    monthly_reserve = month_reserve_result['total'] or Decimal('0')
     
-    # Текущий резерв (процент от всех доходов)
-    total_income_all_time = Transaction.objects.filter(
-        user=request.user,
-        type='income'
-    ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
-    
-    # ИСПРАВЛЕНИЕ: Используем Decimal для всех расчетов
-    reserve_percentage_decimal = Decimal(str(reserve_percentage))
-    current_reserve = total_income_all_time * (reserve_percentage_decimal / Decimal('100'))
-    monthly_reserve = month_income * (reserve_percentage_decimal / Decimal('100'))
+    # Текущий резерв (общий накопленный) - это total_reserve
+    current_reserve = total_reserve
     
     # Прогресс к цели
     progress_percentage = 0
     remaining_to_target = target_reserve
     
-    # ИСПРАВЛЕНИЕ: Преобразуем target_reserve в Decimal для расчетов
-    target_reserve_decimal = Decimal(str(target_reserve))
-    if target_reserve_decimal > 0:
-        progress_percentage = float(min(100, (current_reserve / target_reserve_decimal) * Decimal('100')))
-        remaining_to_target = max(Decimal('0'), target_reserve_decimal - current_reserve)
+    if target_reserve > 0:
+        progress_percentage = float(min(100, (current_reserve / target_reserve) * Decimal('100')))
+        remaining_to_target = max(Decimal('0'), target_reserve - current_reserve)
 
     return render(request, 'index.html', {
         'categories': categories,
@@ -110,7 +107,6 @@ def index(request):
         'monthly_reserve': monthly_reserve,
         'progress_percentage': progress_percentage,
         'remaining_to_target': remaining_to_target,
-        'total_income_all_time': total_income_all_time,
     })
 
 
@@ -166,7 +162,7 @@ def update_reserve_percentage(request):
     return JsonResponse({'success': False, 'error': 'Неверный метод запроса'})
 
 
-
+# views.py - обновляем функцию add_transaction
 @login_required
 def add_transaction(request):
     if request.method == "POST":
@@ -198,19 +194,51 @@ def add_transaction(request):
                 return JsonResponse({"success": False, "error": "Неверный формат суммы"})
 
             category = Category.objects.get(id=category_id)
+            
+            # РАСЧЕТ РЕЗЕРВА
+            reserve_amount = Decimal('0')
+            if type_ == 'income':
+                # Получаем процент резерва из профиля пользователя
+                reserve_percentage = request.user.userprofile.reserve_percentage
+                reserve_amount = amount_decimal * (Decimal(reserve_percentage) / Decimal('100'))
+                print(f"Рассчитан резерв: {reserve_amount} с ({reserve_percentage}% от {amount_decimal})")
+
             transaction = Transaction.objects.create(
                 user=request.user,
                 type=type_,
                 amount=amount_decimal,
                 category=category,
-                description=description
+                description=description,
+                reserve_amount=reserve_amount
             )
+            
+            # ПЕРЕСЧИТЫВАЕМ БАЛАНСЫ С УЧЕТОМ РЕЗЕРВА
+            transactions = Transaction.objects.filter(user=request.user)
+            income_result = transactions.filter(type='income').aggregate(total=Sum('amount'))
+            expense_result = transactions.filter(type='expense').aggregate(total=Sum('amount'))
+            reserve_result = transactions.filter(type='income').aggregate(total=Sum('reserve_amount'))
+            
+            income = income_result['total'] or Decimal('0')
+            expense = expense_result['total'] or Decimal('0')
+            total_reserve = reserve_result['total'] or Decimal('0')
+            total = income - expense - total_reserve
+            
+            # РАСЧЕТ РЕЗЕРВА ЗА ТЕКУЩИЙ МЕСЯЦ
+            now = timezone.now()
+            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_reserve_result = Transaction.objects.filter(
+                user=request.user,
+                type='income',
+                created_at__gte=month_start
+            ).aggregate(total=Sum('reserve_amount'))
+            monthly_reserve = month_reserve_result['total'] or Decimal('0')
             
             # Возвращаем данные о созданной транзакции для динамического обновления
             transaction_data = {
                 'id': transaction.id,
                 'type': transaction.type,
                 'amount': float(transaction.amount),
+                'reserve_amount': float(reserve_amount),
                 'description': transaction.description,
                 'created_at': transaction.created_at.isoformat(),
                 'category_id': transaction.category.id,
@@ -219,12 +247,16 @@ def add_transaction(request):
                 'category_color': transaction.category.color,
             }
             
-            print(f"Транзакция создана: {transaction}")
             return JsonResponse({
                 "success": True, 
                 "transaction": transaction_data,
-                "transaction_type": transaction.type,
-                "amount": float(transaction.amount)
+                "updated_balances": {
+                    "total": float(total),
+                    "income": float(income),
+                    "expense": float(expense),
+                    "total_reserve": float(total_reserve),
+                    "monthly_reserve": float(monthly_reserve)  # добавляем месячный резерв
+                }
             })
             
         except Category.DoesNotExist:
@@ -234,6 +266,9 @@ def add_transaction(request):
             return JsonResponse({"success": False, "error": f"Внутренняя ошибка сервера: {str(e)}"})
 
     return JsonResponse({"success": False, "error": "Неверный метод запроса"})
+
+
+
 
 # Приветственная страница
 def hello(request):
@@ -330,14 +365,54 @@ def get_categories(request):
     ]
     return JsonResponse({"categories": categories_data})
 
+
 @login_required
 def delete_transaction(request, transaction_id):
     try:
         transaction = Transaction.objects.get(id=transaction_id, user=request.user)
+        
+        # Сохраняем данные для пересчета балансов
+        transaction_type = transaction.type
+        transaction_amount = transaction.amount
+        transaction_reserve = transaction.reserve_amount
+        
         transaction.delete()
-        return JsonResponse({"success": True})
+        
+        # ПЕРЕСЧИТЫВАЕМ БАЛАНСЫ ПОСЛЕ УДАЛЕНИЯ
+        transactions = Transaction.objects.filter(user=request.user)
+        income_result = transactions.filter(type='income').aggregate(total=Sum('amount'))
+        expense_result = transactions.filter(type='expense').aggregate(total=Sum('amount'))
+        reserve_result = transactions.filter(type='income').aggregate(total=Sum('reserve_amount'))
+        
+        income = income_result['total'] or Decimal('0')
+        expense = expense_result['total'] or Decimal('0')
+        total_reserve = reserve_result['total'] or Decimal('0')
+        total = income - expense - total_reserve
+        
+        # РАСЧЕТ РЕЗЕРВА ЗА ТЕКУЩИЙ МЕСЯЦ
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_reserve_result = Transaction.objects.filter(
+            user=request.user,
+            type='income',
+            created_at__gte=month_start
+        ).aggregate(total=Sum('reserve_amount'))
+        monthly_reserve = month_reserve_result['total'] or Decimal('0')
+        
+        return JsonResponse({
+            "success": True,
+            "updated_balances": {
+                "total": float(total),
+                "income": float(income),
+                "expense": float(expense),
+                "total_reserve": float(total_reserve),
+                "monthly_reserve": float(monthly_reserve)  # добавляем месячный резерв
+            }
+        })
     except Transaction.DoesNotExist:
         return JsonResponse({"success": False, "error": "Транзакция не найдена"})
+
+
 
 def generate_random_password(length=12):
     """Генерация случайного пароля"""
@@ -514,6 +589,7 @@ def get_transactions(request):
         transactions_data.append({
             'id': transaction.id,
             'amount': float(transaction.amount),
+            'reserve_amount': float(transaction.reserve_amount),  # добавляем резерв
             'type': transaction.type,
             'description': transaction.description,
             'created_at': transaction.created_at.isoformat(),

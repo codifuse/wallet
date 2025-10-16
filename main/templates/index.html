@@ -50,7 +50,7 @@
             <div class="relative">
                 <img id="logo2" src="{% static 'main/ico.svg' %}" alt="Koinda" class="h-10">
                 <span class="absolute -top-1 -right-5 text-[10px] text-gray-400 font-medium">
-                    v1.24
+                    v1.25
                 </span>
             </div>
         </div>
@@ -62,7 +62,7 @@
 
         <!-- Кнопка меню -->
         <div class="flex items-center space-x-2 text-sm flex-shrink-0">
-            <button id="menuToggleBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2">
+            <button id="menuBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2">
                 <i class="fas fa-bars text-gray-300"></i>
             </button>
         </div>
@@ -73,57 +73,56 @@
         <div class="mobile-tab active" id="tab-home">
             <div class="mobile-section">
                 <div class="mobile-content">
-                    <!-- Основной баланс — обновлённый дизайн -->
-                    <div class="relative bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-2xl p-5 mb-4 mt-0 border border-blue-800/30 shadow-lg overflow-hidden">
-                        <!-- Большая фоновая иконка -->
-                        <i class="fas fa-dollar-sign text-[110px] text-blue-800/20 absolute top-3 right-4"></i>
+                 <!-- Основной баланс — обновлённый дизайн -->
+<div class="relative bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-2xl p-5 mb-4 mt-0 border border-blue-800/30 shadow-lg overflow-hidden">
+    <!-- Большая фоновая иконка -->
+    <i class="fas fa-dollar-sign text-[110px] text-blue-800/20 absolute top-3 right-4"></i>
 
-                        <div class="flex justify-between items-start relative z-10">
-                            <!-- Левая часть -->
-                            <div>
-                                <p class="text-sm text-gray-300 mb-1">Текущий баланс</p>
-                                <p class="text-3xl font-bold text-white">
-                                    <span id="totalBalance">{{ total|floatformat:0 }}</span>
-                                </p>
+    <div class="flex justify-between items-start relative z-10">
+        <!-- Левая часть -->
+        <div>
+            <p class="text-sm text-gray-300 mb-1">Текущий баланс</p>
+            <p class="text-3xl font-bold text-white">
+                <span id="totalBalance" data-raw-value="{{ total|floatformat:0 }}">{{ total|floatformat:0 }}</span>
+            </p>
 
-                                <!-- Резерв -->
-                                <div class="mt-3 flex items-center space-x-2">
-                                    <span class="text-sm text-gray-300">Резерв:</span>
-                                    <span class="text-blue-400 font-semibold text-lg" id="reserveAmount">0</span>
-                                    <span class="text-blue-400 text-sm">с</span>
-                                </div>
-                            </div>
-                        </div>
+            <!-- Резерв -->
+            <div class="mt-3 flex items-center space-x-2">
+                <span class="text-sm text-gray-300">Резерв:</span>
+                <span class="text-blue-400 font-semibold text-lg" id="reserveAmount" data-raw-value="{{ current_reserve|floatformat:0 }}">{{ current_reserve|floatformat:0 }}</span>
+                <span class="text-blue-400 text-sm">с</span>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Нижний блок — Доходы, Расходы, Шкала -->
-                        <div class="mt-5 relative z-10">
-                            <div class="flex justify-between items-end mb-2">
-                                <div class="text-left">
-                                    <p class="text-xs text-gray-400 mb-1">Доходы</p>
-                                    <p class="text-green-400 text-sm font-semibold" id="monthIncome">{{ income|floatformat:0 }} с</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-xs text-gray-400 mb-1">Расходы</p>
-                                    <p class="text-red-400 text-sm font-semibold" id="monthExpense">{{ expense|floatformat:0 }} с</p>
-                                </div>
-                            </div>
+    <!-- Нижний блок — Доходы, Расходы, Шкала -->
+    <div class="mt-5 relative z-10">
+        <div class="flex justify-between items-end mb-2">
+            <div class="text-left">
+                <p class="text-xs text-gray-400 mb-1">Доходы</p>
+                <p class="text-green-400 text-sm font-semibold" id="monthIncome" data-raw-value="{{ income|floatformat:0 }}">{{ income|floatformat:0 }} с</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-gray-400 mb-1">Расходы</p>
+                <p class="text-red-400 text-sm font-semibold" id="monthExpense" data-raw-value="{{ expense|floatformat:0 }}">{{ expense|floatformat:0 }} с</p>
+            </div>
+        </div>
 
-                            <!-- Прогресс-бар -->
-                            <div class="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
-                                {% if income > 0 or expense > 0 %}
-                                <div class="flex h-2 rounded-full">
-                                    <div class="bg-green-500 h-2 rounded-l-full"
-                                         style="width: {% widthratio income income|add:expense 100 %}%"></div>
-                                    <div class="bg-red-500 h-2 rounded-r-full"
-                                         style="width: {% widthratio expense income|add:expense 100 %}%"></div>
-                                </div>
-                                {% else %}
-                                <div class="bg-gray-600 h-2 rounded-full"></div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
+        <!-- Прогресс-бар -->
+        <div class="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
+            {% if income > 0 or expense > 0 %}
+            <div class="flex h-2 rounded-full">
+                <div class="bg-green-500 h-2 rounded-l-full"
+                     style="width: {% widthratio income income|add:expense 100 %}%"></div>
+                <div class="bg-red-500 h-2 rounded-r-full"
+                     style="width: {% widthratio expense income|add:expense 100 %}%"></div>
+            </div>
+            {% else %}
+            <div class="bg-gray-600 h-2 rounded-full"></div>
+            {% endif %}
+        </div>
+    </div>
+</div>
                     <!-- Вкладки категорий -->
                     <div class="card-gradient rounded-2xl p-1 mb-4">
                         <div class="tabs-container" id="tabsContainer">
@@ -224,12 +223,28 @@
         <div class="mobile-content">
 
 
-          <!-- Обновленный блок Резерв и сбережения в вкладке статистики -->
+     <!-- Обновленный блок "Резерв и сбережения" с новым дизайном -->
 <div class="card-gradient rounded-2xl p-4 mb-4">
     <h2 class="text-lg font-bold mb-4 flex items-center">
         <i class="fas fa-piggy-bank text-blue-400 mr-2"></i>
         Резерв и сбережения
     </h2>
+    
+    <!-- Уведомление о выключенном резерве -->
+    <div id="reserveNotification" class="mb-4 bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-xl p-4 border border-red-500/30 animate-fadeIn {% if reserve_percentage != 0 %}hidden{% endif %}">
+        <div class="flex items-start space-x-3">
+            <div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <i class="fas fa-exclamation-triangle text-red-400 text-lg"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="font-semibold text-red-400 text-sm mb-1">Резерв отключен</h3>
+                <p class="text-xs text-gray-300">
+                    Функция автоматического резерва отключена. Включите ее в панели управления, 
+                    чтобы откладывать процент от доходов автоматически.
+                </p>
+            </div>
+        </div>
+    </div>
     
     <div class="space-y-4">
         <!-- Текущий резерв -->
@@ -238,7 +253,7 @@
                 <div>
                     <p class="text-sm text-gray-300">Текущий резерв</p>
                     <p class="text-2xl font-bold text-blue-400 mt-1">
-                        <span id="currentReserveAmount">{{ current_reserve|floatformat:0 }}</span> 
+                        <span id="currentReserveAmount" data-raw-value="{{ current_reserve|floatformat:0 }}">{{ current_reserve|floatformat:0 }}</span> 
                         <span class="currency-symbol text-lg">с</span>
                     </p>
                 </div>
@@ -250,57 +265,138 @@
                 </div>
             </div>
             
-            <!-- Прогресс резерва -->
-            <div class="mt-4">
-                <div class="flex justify-between text-sm text-gray-400 mb-1">
-                    <span>Прогресс накопления</span>
-                    <span id="reserveProgressText">{{ progress_percentage|floatformat:1 }}%</span>
-                </div>
-                <div class="w-full bg-gray-700 rounded-full h-2">
-                    <div id="reserveProgressBar" class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500" 
-                         style="width: {{ progress_percentage }}%"></div>
-                </div>
+            
+        </div>
+        
+
+            <!-- ОБНОВЛЕННЫЙ БЛОК ЦЕЛЕВОГО РЕЗЕРВА -->
+<div class="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl p-4 border border-purple-500/20">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <i class="fas fa-bullseye text-purple-400"></i>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-purple-400">Целевой резерв</p>
+                <p class="text-xs text-gray-400">Ваша финансовая цель</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="text-lg font-bold text-purple-400">
+                <span id="targetReserveAmount" data-raw-value="{{ target_reserve|floatformat:0 }}">{{ target_reserve|floatformat:0 }}</span> с
+            </p>
+        </div>
+    </div>
+    
+    <!-- Интерактивный прогресс -->
+    <div class="space-y-3">
+        <div class="flex justify-between items-center">
+            <span class="text-xs text-gray-400">Прогресс</span>
+            <span class="text-xs font-bold text-yellow-400" id="remainingToTargetText">
+                Осталось: <span id="remainingToTarget" data-raw-value="{{ remaining_to_target|floatformat:0 }}">{{ remaining_to_target|floatformat:0 }}</span> с
+            </span>
+        </div>
+        
+        <!-- Основной прогресс-бар -->
+        <div class="w-full bg-gray-700 rounded-full h-3 relative overflow-hidden">
+            <div id="targetProgressBar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-1000 relative" 
+                 style="width: {{ progress_percentage }}%">
+                <!-- Анимация "сияния" на прогресс-баре -->
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse-slow"></div>
             </div>
         </div>
         
-        <!-- Статистика резерва -->
+        <!-- Дополнительная информация о прогрессе -->
+        <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="text-xs text-gray-400">
+                <div class="font-bold text-blue-400" id="targetCurrentReserve" data-raw-value="{{ current_reserve|floatformat:0 }}">{{ current_reserve|floatformat:0 }}</div>
+                <div>Накоплено</div>
+            </div>
+            <div class="text-xs text-gray-400">
+                <div class="font-bold text-yellow-400" id="targetRemaining" data-raw-value="{{ remaining_to_target|floatformat:0 }}">{{ remaining_to_target|floatformat:0 }}</div>
+                <div>Осталось</div>
+            </div>
+            <div class="text-xs text-gray-400">
+                <div class="font-bold text-green-400" id="targetProgressPercent">{{ progress_percentage|floatformat:1 }}%</div>
+                <div>Выполнено</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Мотивационное сообщение -->
+    <div class="mt-3 text-center" id="motivationMessage">
+        {% if progress_percentage == 100 %}
+        <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg p-2 border border-green-500/30">
+            <p class="text-xs text-green-400 font-semibold">
+                <i class="fas fa-trophy mr-1"></i>Поздравляем! Цель достигнута!
+            </p>
+        </div>
+        {% elif progress_percentage > 75 %}
+        <p class="text-xs text-yellow-400 animate-pulse">
+            <i class="fas fa-fire mr-1"></i>Осталось совсем немного!
+        </p>
+        {% elif progress_percentage > 50 %}
+        <p class="text-xs text-blue-400">
+            <i class="fas fa-rocket mr-1"></i>Отличный прогресс!
+        </p>
+        {% elif progress_percentage > 25 %}
+        <p class="text-xs text-purple-400">
+            <i class="fas fa-seedling mr-1"></i>Продолжайте в том же духе!
+        </p>
+        {% else %}
+        <p class="text-xs text-gray-400">
+            <i class="fas fa-flag mr-1"></i>Начните свой путь к цели
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+
+        <!-- ОБНОВЛЕННАЯ СТАТИСТИКА РЕЗЕРВА -->
         <div class="grid grid-cols-2 gap-3">
-            <div class="bg-gray-800/40 rounded-lg p-3 text-center">
-                <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-2">
-                    <i class="fas fa-calendar-plus text-blue-400"></i>
+            <!-- Отложено в этом месяце - новый дизайн -->
+            <div class="bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-xl p-4 border border-blue-500/20 hover:border-blue-400/40 transition-all duration-300 group">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-calendar-plus text-blue-400 text-sm"></i>
+                    </div>
+                    <div class="text-right">
+                        <div class="w-3 h-3 rounded-full bg-blue-400 animate-pulse"></div>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-400">Отложено в этом месяце</p>
-                <p class="text-sm font-bold text-blue-400 mt-1">
-                    +<span id="monthlyReserveAmount">{{ monthly_reserve|floatformat:0 }}</span>
+                <p class="text-xs text-gray-400 mb-1">Отложено в этом месяце</p>
+                <p class="text-xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">
+                    +<span id="monthlyReserveAmount" data-raw-value="{{ monthly_reserve|floatformat:0 }}">{{ monthly_reserve|floatformat:0 }}</span>
                 </p>
+                <div class="mt-2 w-full bg-blue-500/20 rounded-full h-1">
+                    <div class="bg-blue-400 h-1 rounded-full transition-all duration-500" style="width: {% widthratio monthly_reserve current_reserve 100 %}%"></div>
+                </div>
             </div>
             
-            <div class="bg-gray-800/40 rounded-lg p-3 text-center">
-                <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-2">
-                    <i class="fas fa-chart-line text-green-400"></i>
+            <!-- Всего накоплено - новый дизайн -->
+            <div class="bg-gradient-to-br from-green-500/10 to-green-600/10 rounded-xl p-4 border border-green-500/20 hover:border-green-400/40 transition-all duration-300 group">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-chart-line text-green-400 text-sm"></i>
+                    </div>
+                    <div class="text-right">
+                        <i class="fas fa-trophy text-green-400 text-sm"></i>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-400">Всего накоплено</p>
-                <p class="text-sm font-bold text-green-400 mt-1">
-                    <span id="totalReserveAmount">{{ current_reserve|floatformat:0 }}</span>
+                <p class="text-xs text-gray-400 mb-1">Всего накоплено</p>
+                <p class="text-xl font-bold text-green-400 group-hover:text-green-300 transition-colors">
+                    <span id="totalReserveAmount" data-raw-value="{{ current_reserve|floatformat:0 }}">{{ current_reserve|floatformat:0 }}</span>
                 </p>
+                <div class="mt-2 flex items-center space-x-1">
+                    <div class="text-xs text-green-400">
+                        <i class="fas fa-arrow-up"></i>
+                    </div>
+                    <div class="text-xs text-gray-400">растет каждый месяц</div>
+                </div>
             </div>
         </div>
 
-        <!-- Дополнительная информация -->
-        <div class="bg-gray-800/40 rounded-lg p-3">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-sm text-gray-300">Целевой резерв</span>
-                <span class="text-sm font-bold text-purple-400" id="targetReserveAmount">
-                    {{ target_reserve|floatformat:0 }} с
-                </span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-300">Осталось до цели</span>
-                <span class="text-sm font-bold text-yellow-400" id="remainingToTarget">
-                    {{ remaining_to_target|floatformat:0 }} с
-                </span>
-            </div>
-        </div>
+ 
     </div>
 </div>
             <!-- Анализ расходов по категориям -->
@@ -545,7 +641,8 @@
         <!-- Подсказка для нового пользователя -->
        <!-- Просто замените блок welcomeHint на этот -->
 {% if not has_transactions %}
-<div id="welcomeHint" class="fixed bottom-20 inset-x-0 text-center animate-bounce z-50">
+<!-- Просто замените блок welcomeHint на этот -->
+<div id="welcomeHint" class="fixed bottom-20 inset-x-0 text-center animate-bounce z-50 {% if has_transactions %}hidden{% endif %}">
     <div class="bg-blue-600 text-white text-sm rounded-lg py-2 px-3 mb-1 inline-block shadow-lg">
         Сделай первую транзакцию!
     </div>
@@ -693,7 +790,7 @@
                     <button class="btn-secondary close-modal" data-modal="category">
                         Отмена
                     </button>
-                    <button class="btn-primary" id="saveCategoryBtn">
+                    <button class="btn-primary" id="saveCategoryBtn" type="button">
                         Сохранить
                     </button>
                 </div>
@@ -932,10 +1029,10 @@
 
 
     <!-- Модальное окно смены пароля -->
-    <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
-        <div class="modal-contentbg-gray-800 rounded-2xl w-full max-w-sm mx-auto">
-            <div class="p-6">
-                <h2 class="text-2xl font-bold mb-6 text-center">Смена пароля</h2>
+    <div id="changePasswordModal"
+     class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm hidden z-[1000] flex items-center justify-center p-4">
+    <div class="modal-content bg-gray-800 rounded-2xl w-full max-w-sm mx-auto p-6">
+        <h2 class="text-xl font-bold mb-4 text-center">Смена пароля</h2>
                 
                 <form id="changePasswordForm" class="space-y-4">
                     {% csrf_token %}
@@ -970,6 +1067,25 @@
             </div>
         </div>
     </div>
+
+<!-- index.html - обновляем блок с балансом -->
+<script>
+    window.initialBalances = {
+        total: {{ total|default:0 }},
+        income: {{ income|default:0 }},
+        expense: {{ expense|default:0 }},
+        total_reserve: {{ current_reserve|default:0 }},
+        monthly_reserve: {{ monthly_reserve|default:0 }}  // добавляем месячный резерв
+    };
+    window.initialReservePercentage = {{ reserve_percentage|default:0 }};
+    window.initialTargetReserve = {{ target_reserve|default:0 }};
+</script>
+
+<!-- Подключение Tailwind и JS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static 'main/app.js' %}"></script>
+    <script src="{% static 'main/notes.js' %}"></script>
+
 
     <script>
         // Переменная для отслеживания первой смены пароля
@@ -1149,22 +1265,7 @@
 
   <script>
 
-     // Передача процента резерва из Django в JavaScript
-    window.initialReservePercentage = {{ reserve_percentage }};
-    window.initialTargetReserve = {{ target_reserve }};
-
-
-    console.log('Инициализированы глобальные переменные:', {
-        categories: window.categories,
-        ADD_TRANSACTION_URL: window.ADD_TRANSACTION_URL,
-        initialBalances: window.initialBalances,
-        isNewUser: window.isNewUser,
-        initialReservePercentage: window.initialReservePercentage,
-        initialTargetReserve: window.initialTargetReserve
-    });
-
-
-    
+  
     // Передаем категории из Django в JavaScript
     window.categories = [
         {% for cat in categories %}
@@ -1179,38 +1280,17 @@
     window.ADD_TRANSACTION_URL = "{% url 'add_transaction' %}";
     window.STATIC_URL = "{% static '' %}";
 
-    // Передача балансов из Django в JavaScript
-    window.initialBalances = {
-        total: {{ total }},
-        income: {{ income }},
-        expense: {{ expense }}
-    };
+  
 
     // Флаг нового пользователя для показа приветствия
     window.isNewUser = {% if is_new_user %}true{% else %}false{% endif %};
 
-    console.log('Инициализированы глобальные переменные:', {
-        categories: window.categories,
-        ADD_TRANSACTION_URL: window.ADD_TRANSACTION_URL,
-        initialBalances: window.initialBalances,
-        isNewUser: window.isNewUser  // Добавьте для отладки
-    });
 
     // Инициализация при загрузке страницы
     document.addEventListener("DOMContentLoaded", function() {
-        console.log('isNewUser:', window.isNewUser); // Для отладки
 
-        // Показываем приветствие для нового пользователя
-        if (window.isNewUser) {
-            console.log('Показываем приветствие для нового пользователя');
-            setTimeout(() => {
-                if (typeof showSuccessNotification === 'function') {
-                    showSuccessNotification('Добро пожаловать!');
-                } else {
-                    console.error('Функция showSuccessNotification не найдена');
-                }
-            }, 1000);
-        }
+
+        
         
         // Скрываем пустое состояние для фильтрованных категорий
         const emptyStateFiltered = document.getElementById('emptyStateFiltered');
@@ -1220,7 +1300,7 @@
         
         // Инициализация системы фильтрации
         if (typeof window.initTransactionFilter === 'function') {
-            console.log('Инициализация системы фильтрации транзакций...');
+
             window.initTransactionFilter();
         } else {
             console.error('Функция initTransactionFilter не найдена');
@@ -1233,11 +1313,7 @@
     });
 </script>
 
-    <!-- Подключение Tailwind и JS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="{% static 'main/app.js' %}"></script>
-    <script src="{% static 'main/history_sort.js' %}"></script>
-    <script src="{% static 'main/notes.js' %}"></script>
+    
 
 </body>
 </html>

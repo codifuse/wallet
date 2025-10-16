@@ -36,6 +36,7 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    reserve_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return f"{self.user.username} - {self.category} ({self.amount})"
@@ -44,7 +45,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     password_changed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    reserve_percentage = models.PositiveSmallIntegerField(default=10) 
+    reserve_percentage = models.PositiveSmallIntegerField(default=0) 
     target_reserve = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     def __str__(self):

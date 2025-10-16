@@ -1,210 +1,906 @@
-// =============================================
-// АНИМАЦИЯ ЛОГОТИПА
-// =============================================
+// -----------------------------
+// Утилиты и глобальные переменные
+// -----------------------------
+let currentFilter = 'week';
+let currentPage = 1;
+let hasMoreTransactions = true;
+let isLoading = false;
+let currentCategory = 'all';
+const PAGE_SIZE = 10;
 
-function initLogoAnimation() {
-    setTimeout(function() {
-        const logo1 = document.getElementById('logo1');
-        const logo2 = document.getElementById('logo2');
-        
-        if (logo1 && logo2) {
-            logo1.classList.add('opacity-0', 'blur-md');
-            setTimeout(() => {
-                logo2.classList.remove('opacity-0', 'blur-md');
-            }, 350);
-        }
-    }, 1500);
+window.categories = window.categories || [];
+window.initialBalances = window.initialBalances || { total: 0, income: 0, expense: 0 };
+window.initialReservePercentage = window.initialReservePercentage || 0;
+window.initialTargetReserve = window.initialTargetReserve || 0;
+
+
+// -----------------------------
+// Уведомления и мелкие UI-помощники
+// -----------------------------
+function showSuccessNotification(message) {
+    const container = document.getElementById('notificationContainer');
+    if (!container) return;
+    const notification = document.createElement('div');
+    notification.className = 'notification-inline flex items-center px-3 py-1.5 rounded-lg text-sm bg-gray-800/80 backdrop-blur-sm border border-gray-700';
+    notification.innerHTML = `<span><i class="fas fa-bell mr-2 text-blue-400"></i> ${message}</span>`;
+container.appendChild(notification);
+
+// Обеспечим наложение поверх предыдущих
+notification.style.zIndex = Date.now(); // чуть выше с каждым разом
+
+setTimeout(() => {
+    notification.classList.add('fade-out');
+    setTimeout(() => notification.remove(), 300);
+}, 2000);
+
 }
 
-// =============================================
-// УПРАВЛЕНИЕ МОДАЛЬНЫМИ ОКНАМИ
-// =============================================
+// -----------------------------
+// Модалки
+// -----------------------------
+function animateModal(modalEl, show = true) {
+    if (!modalEl) return;
 
-function toggleModal(modalId, show = true) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        if (show) {
-            modal.classList.remove('hidden');
-        } else {
-            modal.classList.add('hidden');
+    if (show) {
+        modalEl.classList.remove('hidden');
+        modalEl.classList.add('animate-overlayFadeIn');
+
+        // Блокируем скролл фона
+        document.body.classList.add('modal-open');
+
+        const content = modalEl.querySelector('.modal-content');
+        if (content) {
+            content.classList.remove('animate-modalHide');
+            content.classList.add('animate-modalShow');
         }
+    } else {
+        const content = modalEl.querySelector('.modal-content');
+        if (content) {
+            content.classList.remove('animate-modalShow');
+            content.classList.add('animate-modalHide');
+        }
+
+        // Разблокируем скролл через небольшой таймаут
+        setTimeout(() => {
+            modalEl.classList.add('hidden');
+            document.body.classList.remove('modal-open');
+        }, 200);
     }
 }
 
-// =============================================
-// МОДАЛКА ПАНЕЛИ УПРАВЛЕНИЯ (МЕНЮ)
-// =============================================
 
-document.addEventListener("DOMContentLoaded", () => {
-    const menuModal = document.getElementById("menuModal");
-    const menuBtn = document.getElementById("menuToggleBtn");
+// -----------------------------
+// Балансы и резерв
+// -----------------------------
+function updateBalanceDisplay() {
+    const totalEl = document.getElementById('totalBalance');
+    const incomeEl = document.getElementById('monthIncome');
+    const expenseEl = document.getElementById('monthExpense');
+    const reserveEl = document.getElementById('reserveAmount');
+    
+    if (totalEl && window.initialBalances) {
+        const rawValue = window.initialBalances.total || 0;
+        totalEl.textContent = formatAmount(rawValue);
+        totalEl.setAttribute('data-raw-value', rawValue);
+    }
+    
+    if (incomeEl && window.initialBalances) {
+        const rawValue = window.initialBalances.income || 0;
+        incomeEl.textContent = formatAmount(rawValue) + ' с';
+        incomeEl.setAttribute('data-raw-value', rawValue);
+    }
+    
+    if (expenseEl && window.initialBalances) {
+        const rawValue = window.initialBalances.expense || 0;
+        expenseEl.textContent = formatAmount(rawValue) + ' с';
+        expenseEl.setAttribute('data-raw-value', rawValue);
+    }
+    
+    if (reserveEl && window.initialBalances) {
+        const rawValue = window.initialBalances.total_reserve || 0;
+        reserveEl.textContent = formatAmount(rawValue);
+        reserveEl.setAttribute('data-raw-value', rawValue);
+    }
+    
+    updateSavingsDisplay();
+}
 
-    // Открытие модалки меню
-    if (menuBtn && menuModal) {
-        menuBtn.addEventListener("click", (e) => {
+// -----------------------------
+// Обновление отображения сбережений в вкладке статистики
+// -----------------------------
+
+
+// Обновленная функция для отображения сбережений
+function updateSavingsDisplay() {
+    try {
+        const currentReserveValue = window.initialBalances.total_reserve || 0;
+        const monthlyReserveValue = window.initialBalances.monthly_reserve || 0;
+        const targetReserveValue = window.initialTargetReserve || 0;
+        const remainingValue = Math.max(0, targetReserveValue - currentReserveValue);
+        const progressPercentage = targetReserveValue > 0 ? 
+            Math.min(100, (currentReserveValue / targetReserveValue) * 100) : 0;
+
+        // Обновляем текущий резерв
+        const currentReserveEl = document.getElementById('currentReserveAmount');
+        if (currentReserveEl) {
+            currentReserveEl.textContent = formatAmount(currentReserveValue);
+            currentReserveEl.setAttribute('data-raw-value', currentReserveValue);
+        }
+
+        // Обновляем отложено в этом месяце
+        const monthlyReserveEl = document.getElementById('monthlyReserveAmount');
+        if (monthlyReserveEl) {
+            monthlyReserveEl.textContent = formatAmount(monthlyReserveValue);
+            monthlyReserveEl.setAttribute('data-raw-value', monthlyReserveValue);
+        }
+
+        // Обновляем всего накоплено
+        const totalReserveEl = document.getElementById('totalReserveAmount');
+        if (totalReserveEl) {
+            totalReserveEl.textContent = formatAmount(currentReserveValue);
+            totalReserveEl.setAttribute('data-raw-value', currentReserveValue);
+        }
+
+        // Обновляем целевой резерв
+        const targetReserveEl = document.getElementById('targetReserveAmount');
+        if (targetReserveEl) {
+            targetReserveEl.textContent = formatAmount(targetReserveValue);
+            targetReserveEl.setAttribute('data-raw-value', targetReserveValue);
+        }
+
+        // Обновляем осталось до цели
+        const remainingEl = document.getElementById('remainingToTarget');
+        if (remainingEl) {
+            remainingEl.textContent = formatAmount(remainingValue);
+            remainingEl.setAttribute('data-raw-value', remainingValue);
+        }
+
+        // Обновляем текст "Осталось: X с"
+        const remainingTextEl = document.getElementById('remainingToTargetText');
+        if (remainingTextEl) {
+            remainingTextEl.innerHTML = `Осталось: <span id="remainingToTarget" data-raw-value="${remainingValue}">${formatAmount(remainingValue)}</span> с`;
+        }
+
+        // Обновляем прогресс-бар и текст прогресса
+        const progressBar = document.getElementById('reserveProgressBar');
+        const progressText = document.getElementById('reserveProgressText');
+        
+        if (progressBar) {
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+        if (progressText) {
+            progressText.textContent = `${progressPercentage.toFixed(1)}%`;
+        }
+
+        // ОБНОВЛЯЕМ ЦЕЛЕВОЙ ПРОГРЕСС-БАР
+        const targetProgressBar = document.getElementById('targetProgressBar');
+        if (targetProgressBar) {
+            targetProgressBar.style.width = `${progressPercentage}%`;
+        }
+
+        // ОБНОВЛЯЕМ ДИНАМИЧЕСКИЕ ЭЛЕМЕНТЫ ЦЕЛЕВОГО РЕЗЕРВА
+        const targetCurrentReserveEl = document.getElementById('targetCurrentReserve');
+        if (targetCurrentReserveEl) {
+            targetCurrentReserveEl.textContent = formatAmount(currentReserveValue) + ' с';
+            targetCurrentReserveEl.setAttribute('data-raw-value', currentReserveValue);
+        }
+
+        const targetRemainingEl = document.getElementById('targetRemaining');
+        if (targetRemainingEl) {
+            targetRemainingEl.textContent = formatAmount(remainingValue) + ' с';
+            targetRemainingEl.setAttribute('data-raw-value', remainingValue);
+        }
+
+        const targetProgressPercentEl = document.getElementById('targetProgressPercent');
+        if (targetProgressPercentEl) {
+            targetProgressPercentEl.textContent = `${progressPercentage.toFixed(1)}%`;
+        }
+
+        // ОБНОВЛЯЕМ МОТИВАЦИОННОЕ СООБЩЕНИЕ
+        updateMotivationMessage(progressPercentage);
+
+    } catch (e) {
+        console.error('updateSavingsDisplay error', e);
+    }
+}
+
+// Функция для обновления мотивационного сообщения
+function updateMotivationMessage(progressPercentage) {
+    const motivationMessageEl = document.getElementById('motivationMessage');
+    if (!motivationMessageEl) return;
+
+    let messageHtml = '';
+
+    if (progressPercentage === 100) {
+        messageHtml = `
+            <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg p-2 border border-green-500/30">
+                <p class="text-xs text-green-400 font-semibold">
+                    <i class="fas fa-trophy mr-1"></i>Поздравляем! Цель достигнута!
+                </p>
+            </div>
+        `;
+    } else if (progressPercentage > 75) {
+        messageHtml = `
+            <p class="text-xs text-yellow-400 animate-pulse">
+                <i class="fas fa-fire mr-1"></i>Осталось совсем немного!
+            </p>
+        `;
+    } else if (progressPercentage > 50) {
+        messageHtml = `
+            <p class="text-xs text-blue-400">
+                <i class="fas fa-rocket mr-1"></i>Отличный прогресс!
+            </p>
+        `;
+    } else if (progressPercentage > 25) {
+        messageHtml = `
+            <p class="text-xs text-purple-400">
+                <i class="fas fa-seedling mr-1"></i>Продолжайте в том же духе!
+            </p>
+        `;
+    } else {
+        messageHtml = `
+            <p class="text-xs text-gray-400">
+                <i class="fas fa-flag mr-1"></i>Начните свой путь к цели
+            </p>
+        `;
+    }
+
+    motivationMessageEl.innerHTML = messageHtml;
+}
+
+// -----------------------------
+// Форматирование всех элементов резерва при загрузке
+// -----------------------------
+// Форматирование всех элементов резерва при загрузке
+function formatAllReserveElements() {
+    const reserveElements = [
+        'currentReserveAmount',
+        'monthlyReserveAmount',
+        'totalReserveAmount',
+        'targetReserveAmount',
+        'remainingToTarget',
+        'targetCurrentReserve',
+        'targetRemaining'
+    ];
+
+    reserveElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            const rawValue = element.getAttribute('data-raw-value') || element.textContent.replace(/[^\d]/g, '');
+            if (rawValue) {
+                element.textContent = formatAmount(rawValue);
+                element.setAttribute('data-raw-value', rawValue);
+            }
+        }
+    });
+    
+    // Также форматируем прогресс при загрузке
+    const progressText = document.getElementById('reserveProgressText');
+    if (progressText) {
+        const currentValue = parseFloat(progressText.textContent) || 0;
+        progressText.textContent = `${currentValue.toFixed(1)}%`;
+    }
+}
+
+
+// -----------------------------
+// Улучшенная функция форматирования
+// -----------------------------
+function formatAmount(amount) {
+    // Если значение уже отформатировано (содержит пробелы), возвращаем как есть
+    if (typeof amount === 'string' && amount.includes(' ')) {
+        return amount;
+    }
+    
+    const number = typeof amount === 'string' ? 
+        parseFloat(amount.replace(/\s/g, '').replace(',', '.')) : 
+        amount || 0;
+    
+    // Округляем до целого числа
+    const rounded = Math.round(number);
+    
+    // Форматируем с пробелами между тысячами
+    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+
+
+
+// -----------------------------
+// Форматирование всех элементов резерва
+// -----------------------------
+function formatAllReserveElements() {
+    const reserveElements = [
+        'currentReserveAmount',
+        'monthlyReserveAmount',
+        'totalReserveAmount',
+        'targetReserveAmount',
+        'remainingToTarget'
+    ];
+
+    reserveElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            const rawValue = element.getAttribute('data-raw-value') || element.textContent;
+            element.textContent = formatAmount(rawValue);
+            element.setAttribute('data-raw-value', rawValue);
+        }
+    });
+}
+
+
+
+function updateReserveDisplay() {
+    try {
+        const reserveAmountEl = document.getElementById('reserveAmount');
+        const reservePercentDisplay = document.getElementById('reservePercentageDisplay') || document.getElementById('currentReservePercent');
+        
+        if (!reserveAmountEl) return;
+        
+        // Используем фактический резерв из initialBalances
+        const reserveValue = window.initialBalances.total_reserve || 0;
+        
+        // Форматируем значение резерва
+        reserveAmountEl.textContent = formatAmount(reserveValue);
+        reserveAmountEl.setAttribute('data-raw-value', reserveValue);
+        
+        if (reservePercentDisplay) {
+            reservePercentDisplay.textContent = window.initialReservePercentage + '%';
+        }
+        
+    } catch (e) {
+        console.error('updateReserveDisplay error', e);
+    }
+}
+
+
+
+// -----------------------------
+// Добавление транзакции в DOM
+// -----------------------------
+
+window.addTransactionToList = function(transaction, animate = true, append = false) {
+    const transactionsContainer = document.getElementById('transactionsListContainer');
+    if (!transactionsContainer) return;
+
+    const transactionDate = new Date(transaction.created_at || transaction.created || Date.now());
+    const formattedDate = transactionDate.toLocaleDateString('ru-RU');
+    const formattedTime = transactionDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    // Универсальная структура с датой всегда под суммой
+    let amountDisplay = '';
+    if (transaction.type === 'income') {
+        if (transaction.reserve_amount > 0) {
+            amountDisplay = `
+                <div class="text-right">
+                    <div class="space-y-1">
+                        <p class="text-green-400 font-semibold">+${formatAmount(transaction.amount)} с</p>
+                        <p class="text-blue-400 text-xs">резерв: ${formatAmount(transaction.reserve_amount)} с</p>
+                        <p class="text-xs text-gray-400">${formattedDate} ${formattedTime}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            amountDisplay = `
+                <div class="text-right">
+                    <div class="space-y-1">
+                        <p class="text-green-400 font-semibold">+${formatAmount(transaction.amount)} с</p>
+                        <p class="text-xs text-gray-400">${formattedDate} ${formattedTime}</p>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        amountDisplay = `
+            <div class="text-right">
+                <div class="space-y-1">
+                    <p class="text-red-400 font-semibold">-${formatAmount(transaction.amount)} с</p>
+                    <p class="text-xs text-gray-400">${formattedDate} ${formattedTime}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    const html = `
+        <div class="transaction-item bg-gray-800 rounded-lg p-3 flex justify-between items-center ${animate ? 'animate-fadeIn' : ''}"
+             data-category-id="${transaction.category_id || transaction.categoryId || 'unknown'}"
+             data-transaction-id="${transaction.id || ''}">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center" 
+                     style="background-color: ${transaction.category_color || '#999'}22; color: ${transaction.category_color || '#999'}">
+                    <i class="${transaction.category_icon || 'fas fa-circle'}"></i>
+                </div>
+                <div>
+                    <p class="font-medium">${transaction.category_name || transaction.category || 'Прочее'}</p>
+                    ${transaction.description ? `<p class="text-xs text-gray-400">${transaction.description}</p>` : ''}
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                ${amountDisplay}
+                <button class="delete-transaction-btn text-red-400 hover:text-red-300 p-2 transition-colors" 
+                        data-transaction-id="${transaction.id || ''}" title="Удалить транзакцию">
+                    <i class="fas fa-trash text-sm"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    // ИЗМЕНЕНИЕ: Добавляем транзакцию в начало или конец в зависимости от параметра append
+    if (append) {
+        transactionsContainer.insertAdjacentHTML('beforeend', html);
+    } else {
+        transactionsContainer.insertAdjacentHTML('afterbegin', html);
+    }
+
+    // скрыть пустые состояния
+    hideEmptyStates();
+    updateWelcomeHint();
+};
+
+
+
+
+// -----------------------------
+// Пустые состояния
+// -----------------------------
+function hideEmptyStates() {
+    const emptyAll = document.getElementById('emptyStateAll');
+    const emptyFiltered = document.getElementById('emptyStateFiltered');
+    if (emptyAll) emptyAll.classList.add('hidden');
+    if (emptyFiltered) emptyFiltered.classList.add('hidden');
+}
+
+function showEmptyState() {
+    const emptyAll = document.getElementById('emptyStateAll');
+    const emptyFiltered = document.getElementById('emptyStateFiltered');
+    if (currentCategory === 'all') {
+        if (emptyAll) emptyAll.classList.remove('hidden');
+        if (emptyFiltered) emptyFiltered.classList.add('hidden');
+    } else {
+        if (emptyFiltered) emptyFiltered.classList.remove('hidden');
+        if (emptyAll) emptyAll.classList.add('hidden');
+    }
+}
+
+// -----------------------------
+// Загрузка транзакций (единственная реализация)
+// -----------------------------
+async function loadTransactions() {
+    if (isLoading) return;
+    isLoading = true;
+
+    const transactionsContainer = document.getElementById('transactionsListContainer');
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    if (!transactionsContainer) {
+        console.error('transactionsListContainer not found');
+        isLoading = false;
+        return;
+    }
+
+    if (currentPage === 1) {
+        transactionsContainer.innerHTML = `
+            <div class="text-center py-4">
+                <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div>
+                <p class="text-gray-400 text-sm mt-2">Загрузка...</p>
+            </div>
+        `;
+    }
+
+    try {
+        const resp = await fetch(`/get_transactions/?filter=${currentFilter}&page=${currentPage}&limit=${PAGE_SIZE}&category=${currentCategory}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        if (!resp.ok) {
+            console.error('Server error when fetching transactions:', resp.status, resp.statusText);
+            if (currentPage === 1) {
+                transactionsContainer.innerHTML = `<div class="text-center py-8 text-red-400"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><p>Ошибка загрузки (сервер вернул ${resp.status}).</p></div>`;
+            }
+            hasMoreTransactions = false;
+            if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+            return;
+        }
+
+        const data = await resp.json();
+        if (data.success) {
+            if (currentPage === 1) transactionsContainer.innerHTML = '';
+            
+            if (data.transactions && data.transactions.length > 0) {
+                // УБИРАЕМ СОРТИРОВКУ - сервер должен возвращать уже отсортированные данные
+                // от новых к старым
+                data.transactions.forEach(tx => window.addTransactionToList(tx, false, true));
+                
+                hasMoreTransactions = !!data.has_more;
+                if (loadMoreContainer) loadMoreContainer.classList.toggle('hidden', !hasMoreTransactions);
+                hideEmptyStates();
+                updateWelcomeHint();
+                if (hasMoreTransactions) currentPage++;
+            } else {
+                if (currentPage === 1) {
+                    transactionsContainer.innerHTML = '';
+                    showEmptyState();
+                    updateWelcomeHint();
+                    if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+                } else {
+                    if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+                }
+                hasMoreTransactions = false;
+            }
+        } else {
+            console.error('API returned success:false for transactions:', data);
+            if (currentPage === 1) {
+                transactionsContainer.innerHTML = `<div class="text-center py-8 text-red-400"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><p>Ошибка загрузки данных</p></div>`;
+            }
+            if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+            hasMoreTransactions = false;
+        }
+    } catch (error) {
+        console.error('Ошибка при загрузке транзакций:', error);
+        if (currentPage === 1) {
+            transactionsContainer.innerHTML = `<div class="text-center py-8 text-red-400"><i class="fas fa-exclamation-triangle text-2xl mb-2"></i><p>Ошибка загрузки</p></div>`;
+        }
+        if (loadMoreContainer) loadMoreContainer.classList.add('hidden');
+        hasMoreTransactions = false;
+    } finally {
+        isLoading = false;
+    }
+}
+
+// Загрузить ещё
+async function loadMoreTransactions() {
+    if (isLoading || !hasMoreTransactions) return;
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (loadMoreBtn) {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerHTML = '<div class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>';
+    }
+    await loadTransactions();
+    if (loadMoreBtn) {
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.textContent = 'Загрузить еще';
+    }
+}
+
+// -----------------------------
+// Инициализация фильтров и табов категорий
+// -----------------------------
+function updateCategoryTabsHandlers() {
+    const tabs = document.querySelectorAll('.tab');
+    // переподвешиваем обработчики (делаем клон чтобы убрать старые)
+    tabs.forEach(tab => {
+        const clone = tab.cloneNode(true);
+        tab.parentNode.replaceChild(clone, tab);
+    });
+    const updatedTabs = document.querySelectorAll('.tab');
+    updatedTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            updatedTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const categoryId = this.dataset.category;
+            currentCategory = categoryId || 'all';
+            currentPage = 1;
+            hasMoreTransactions = true;
+            loadTransactions();
+        });
+    });
+}
+
+function initTransactionFilter() {
+    const filterToggle = document.getElementById('filterToggleBtn');
+    const filterDropdown = document.getElementById('filterDropdown');
+    const filterOptions = document.querySelectorAll('.filter-option');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+    if (filterToggle && filterDropdown) {
+        filterToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            filterDropdown.classList.toggle('hidden');
+        });
+        document.addEventListener('click', () => filterDropdown.classList.add('hidden'));
+    }
+
+    filterOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const filter = this.dataset.filter;
+            currentFilter = filter || 'week';
+            currentPage = 1;
+            hasMoreTransactions = true;
+            const currentText = document.getElementById('currentFilterText');
+            if (currentText) currentText.textContent = this.textContent.trim();
+            filterDropdown.classList.add('hidden');
+            loadTransactions();
+        });
+    });
+
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', loadMoreTransactions);
+    }
+
+    // авто-инициализация при загрузке если пусто
+    setTimeout(() => {
+        const container = document.getElementById('transactionsListContainer');
+        if (container && container.children.length === 0) {
+            loadTransactions();
+        }
+    }, 300);
+}
+
+
+
+// -----------------------------
+// Удаление транзакций (инлайн-подтверждение)
+// -----------------------------
+function deleteTransaction(transactionId) {
+    const el = document.querySelector(`.delete-transaction-btn[data-transaction-id="${transactionId}"]`);
+    if (!el) return;
+    const item = el.closest('.transaction-item');
+    if (!item) return;
+
+    // Сохраняем оригинальное содержимое и информацию о транзакции
+    const originalContent = item.innerHTML;
+    const transactionType = item.querySelector('.font-semibold').classList.contains('text-green-400') ? 'income' : 'expense';
+    const amountText = item.querySelector('.font-semibold').textContent;
+    const amount = parseFloat(amountText.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+
+    // Создаем контент подтверждения удаления
+    item.innerHTML = `
+        <div class="flex items-center justify-between w-full animate-popIn">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-trash text-red-400"></i>
+                <span class="text-gray-200 text-sm font-medium">Удалить операцию?</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button class="cancel-delete-btn bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all">
+                    Нет
+                </button>
+                <button class="confirm-delete-btn bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                        data-transaction-id="${transactionId}">
+                    Да
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Обработчик подтверждения удаления
+    const confirmBtn = item.querySelector('.confirm-delete-btn');
+       confirmBtn.addEventListener('click', async function() {
+        try {
+            const resp = await fetch(`/delete_transaction/${transactionId}/`);
+            const data = await resp.json();
+            if (data.success) {
+                // Показываем успешное сообщение
+                item.innerHTML = `
+                    <div class="w-full flex items-center justify-between animate-popIn">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-green-500/15 flex items-center justify-center ring-2 ring-green-400/30 shadow-inner shadow-green-600/10">
+                                <i class="fas fa-check text-green-400 text-lg"></i>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-green-400 font-semibold text-sm tracking-wide">Транзакция удалена!</span>
+                                <span class="text-gray-400 text-xs">Данные успешно обновлены :)</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-circle-check text-green-400 text-xl opacity-80"></i>
+                    </div>
+                `;
+
+              setTimeout(() => { 
+                    item.remove(); 
+                    checkEmptyStatesAfterChange(); 
+                    updateWelcomeHint(); // обновляем подсказку
+                }, 2200);
+
+                // Обновляем балансы
+                if (data.updated_balances) {
+                    window.initialBalances = data.updated_balances;
+                    updateBalanceDisplay();
+                } else {
+                    // Локальное обновление баланса при удалении
+                    updateBalancesAfterDelete(transactionType, Math.abs(amount));
+                }
+            } else {
+                // В случае ошибки возвращаем оригинальное содержимое
+                item.innerHTML = originalContent;
+                reattachDeleteHandler(item, transactionId);
+            }
+        } catch (e) {
+            console.error('delete transaction error', e);
+            // В случае ошибки возвращаем оригинальное содержимое
+            item.innerHTML = originalContent;
+            reattachDeleteHandler(item, transactionId);
+        }
+    });
+    
+    // Обработчик отмены удаления
+    const cancelBtn = item.querySelector('.cancel-delete-btn');
+    cancelBtn.addEventListener('click', function() {
+        // Возвращаем оригинальное содержимое
+        item.innerHTML = originalContent;
+        // Перепривязываем обработчик удаления
+        reattachDeleteHandler(item, transactionId);
+    });
+}
+
+// -----------------------------
+// Перепривязка обработчика удаления после отмены
+// -----------------------------
+function reattachDeleteHandler(item, transactionId) {
+    const deleteBtn = item.querySelector('.delete-transaction-btn');
+    if (deleteBtn) {
+        // Удаляем старые обработчики и добавляем новый
+        deleteBtn.replaceWith(deleteBtn.cloneNode(true));
+        const newDeleteBtn = item.querySelector('.delete-transaction-btn');
+        newDeleteBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            animateModal(menuModal, true);
+            deleteTransaction(transactionId);
         });
     }
+}
 
-    // Закрытие модалки меню при клике на кнопку "Закрыть"
-    const closeMenuBtn = document.querySelector('#menuModal button[onclick*="toggleMenuModal"]');
-    if (closeMenuBtn) {
-        closeMenuBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            animateModal(menuModal, false);
-        });
+// -----------------------------
+// Локальное обновление балансов при удалении транзакции
+// -----------------------------
+function updateBalancesAfterDelete(type, amount) {
+    if (!window.initialBalances) window.initialBalances = { total: 0, income: 0, expense: 0 };
+    
+    let total = parseFloat(window.initialBalances.total || 0);
+    let income = parseFloat(window.initialBalances.income || 0);
+    let expense = parseFloat(window.initialBalances.expense || 0);
+
+    if (type === 'income') {
+        // Удаляем доход: уменьшаем общий баланс и доходы
+        total -= amount;
+        income -= amount;
+    } else {
+        // Удаляем расход: увеличиваем общий баланс и уменьшаем расходы
+        total += amount;
+        expense -= amount;
     }
 
-    // Закрытие модалки меню при клике вне окна
-    if (menuModal) {
-        menuModal.addEventListener('click', (e) => {
-            if (e.target === menuModal) {
-                animateModal(menuModal, false);
-            }
-        });
+    window.initialBalances.total = total;
+    window.initialBalances.income = income;
+    window.initialBalances.expense = expense;
+    
+    updateBalanceDisplay();
+}
+
+// -----------------------------
+// Делегирование событий для кнопок удаления
+// -----------------------------
+document.addEventListener('click', function(e) {
+    // Обработка кнопок удаления транзакций
+    if (e.target.closest('.delete-transaction-btn')) {
+        const target = e.target.closest('.delete-transaction-btn');
+        e.preventDefault();
+        e.stopPropagation();
+        const id = target.dataset.transactionId;
+        if (id) {
+            deleteTransaction(id);
+        }
+    }
+    
+    // Обработка кнопок удаления категорий
+    if (e.target.closest('.delete-category-btn')) {
+        const target = e.target.closest('.delete-category-btn');
+        e.preventDefault();
+        e.stopPropagation();
+        const categoryId = target.dataset.categoryId;
+        if (categoryId) {
+            deleteCategory(categoryId);
+        }
     }
 });
 
+// -----------------------------
+// Проверки пустых состояний
+// -----------------------------
 
-
-// =============================================
-// ОБНОВЛЕНИЕ БАЛАНСА
-// =============================================
-
-function updateBalanceDisplay() {
-    if (!window.initialBalances) return;
+function checkEmptyStatesAfterChange() {
+    const transactionsContainer = document.getElementById('transactionsListContainer');
+    if (!transactionsContainer) return;
     
-    const totalElement = document.getElementById('totalBalance');
-    const incomeElement = document.getElementById('monthIncome');
-    const expenseElement = document.getElementById('monthExpense');
+    const items = transactionsContainer.querySelectorAll('.transaction-item');
+    const visible = Array.from(items).filter(it => !it.innerHTML.includes('Удалить?') && !it.innerHTML.includes('Удалено'));
     
-    if (totalElement) totalElement.textContent = window.initialBalances.total + ' с';
-    if (incomeElement) incomeElement.textContent = window.initialBalances.income + ' с';
-    if (expenseElement) expenseElement.textContent = window.initialBalances.expense + ' с';
-    updateReserveDisplay();
+    if (visible.length === 0) {
+        showEmptyState();
+    } else {
+        hideEmptyStates();
+    }
+    
+    // Обновляем подсказку
+    updateWelcomeHint();
 }
 
 
-// =============================================
-// УПРАВЛЕНИЕ ПРИВЕТСТВЕННЫМ УВЕДОМЛЕНИЕМ
-// =============================================
 
-function checkAndHideWelcomeHint() {
-    const welcomeHint = document.getElementById('welcomeHint');
-    const totalBalance = window.initialBalances?.total || 0;
-    
-    if (welcomeHint && totalBalance !== 0) {
-        hideWelcomeHint();
+// -----------------------------
+// Категории: загрузка и обновление
+// -----------------------------
+async function updateGlobalCategories() {
+    try {
+        const resp = await fetch('/get_categories/');
+        const data = await resp.json();
+        if (data.categories) {
+            window.categories = data.categories;
+            // обновим табы
+            updateCategoryTabs();
+        }
+    } catch (e) {
+        console.error('updateGlobalCategories error', e);
     }
 }
 
-function hideWelcomeHint() {
-    const welcomeHint = document.getElementById('welcomeHint');
-    if (welcomeHint) {
-        // Добавляем анимацию исчезновения
-        welcomeHint.style.opacity = '0';
-        welcomeHint.style.transform = 'translateX(-50%) scale(0.8)';
-        welcomeHint.style.transition = 'all 0.3s ease';
-        
-        // Удаляем элемент после анимации
-        setTimeout(() => {
-            if (welcomeHint.parentNode) {
-                welcomeHint.remove();
-            }
-        }, 300);
+async function updateCategoryTabs() {
+    try {
+        const resp = await fetch('/get_categories/');
+        const data = await resp.json();
+        if (!data.categories) return;
+        const tabsWrapper = document.getElementById('tabsWrapper');
+        if (!tabsWrapper) return;
+        tabsWrapper.innerHTML = `<div class="tab active" data-category="all"><span>Все</span></div>`;
+        data.categories.forEach(cat => {
+            const el = document.createElement('div');
+            el.className = 'tab';
+            el.dataset.category = cat.id;
+            el.innerHTML = `<span>${cat.name}</span>`;
+            tabsWrapper.appendChild(el);
+        });
+        updateCategoryTabsHandlers();
+    } catch (e) {
+        console.error('updateCategoryTabs error', e);
     }
 }
 
-
-// =============================================
-// МОДАЛКА ДОБАВЛЕНИЯ ТРАНЗАКЦИИ
-// =============================================
-
+// -----------------------------
+// Инициализация модалки транзакции, клавиатуры и формы
+// -----------------------------
 function initTransactionModal() {
     const modal = document.getElementById("transactionModal");
     const openBtn = document.getElementById("openTransactionModalBtn");
     const closeBtn = document.getElementById("closeTransactionModalBtn");
-    const form = document.getElementById("transactionForm");
-    
-    if (!modal || !openBtn) {
-        console.error('Не найдены элементы модального окна транзакции');
-        return;
+
+    if (openBtn && modal) {
+        openBtn.addEventListener('click', async function() {
+            animateModal(modal, true);
+            resetTransactionForm();
+            await updateGlobalCategories();
+            // если есть функция loadCategories, вызовем её
+            if (typeof loadCategoriesForModal === 'function') loadCategoriesForModal();
+
+        });
+    }
+    if (closeBtn && modal) {
+        closeBtn.addEventListener('click', () => animateModal(modal, false));
     }
 
-
-    // Открытие модалки с анимацией
-openBtn.addEventListener("click", async function() {
-    modal.classList.remove("hidden");
-    modal.classList.add("animate-overlayFadeIn");
-
-    const modalContent = modal.querySelector('.modal-content'); // контейнер внутри
-    if (modalContent) {
-        modalContent.classList.remove('animate-modalHide');
-        modalContent.classList.add('animate-modalShow');
+    // По клику вне модалки
+    if (modal) {
+        modal.addEventListener('click', e => { if (e.target === modal) animateModal(modal, false); });
     }
 
-    resetTransactionForm();
-    await updateGlobalCategories();
-    loadCategories();
-});
-
-    // Закрытие модалки с анимацией
-if (closeBtn) {
-    closeBtn.addEventListener("click", function() {
-        const modalContent = modal.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.classList.remove('animate-modalShow');
-            modalContent.classList.add('animate-modalHide');
-        }
-
-        // Убираем модалку после завершения анимации
-        setTimeout(() => {
-            modal.classList.add("hidden");
-        }, 200);
-    });
-}
-
-    // Закрытие по клику вне окна
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.classList.add("hidden");
-        }
-    });
-
-    // Инициализация кнопок типа операции
     initTypeButtons();
-    
-    // Инициализация цифровой клавиатуры
     initKeypad();
-    
-    // Инициализация отправки формы
     initFormSubmission();
+    
 }
 
 function initTypeButtons() {
     const typeButtons = document.querySelectorAll('.type-btn');
-    
     typeButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const type = this.dataset.type;
-            
-            console.log('Выбран тип операции:', type);
-            
-            // Сбрасываем стили всех кнопок
             typeButtons.forEach(btn => {
-                btn.classList.remove('bg-red-600', 'bg-green-600', 'text-white', 'border-red-600', 'border-green-600');
-                btn.classList.add('bg-gray-700', 'text-gray-300', 'border-gray-600');
+                btn.classList.remove('bg-red-600','bg-green-600','text-white','border-red-600','border-green-600');
+                btn.classList.add('bg-gray-700','text-gray-300','border-gray-600');
             });
-            
-            // Устанавливаем стили для активной кнопки
+            const type = this.dataset.type;
             if (type === 'expense') {
-                this.classList.remove('bg-gray-700', 'text-gray-300', 'border-gray-600');
-                this.classList.add('bg-red-600', 'text-white', 'border-red-600');
+                this.classList.remove('bg-gray-700','text-gray-300','border-gray-600');
+                this.classList.add('bg-red-600','text-white','border-red-600');
             } else {
-                this.classList.remove('bg-gray-700', 'text-gray-300', 'border-gray-600');
-                this.classList.add('bg-green-600', 'text-white', 'border-green-600');
+                this.classList.remove('bg-gray-700','text-gray-300','border-gray-600');
+                this.classList.add('bg-green-600','text-white','border-green-600');
             }
         });
     });
@@ -212,658 +908,261 @@ function initTypeButtons() {
 
 function initKeypad() {
     const amountInput = document.getElementById('amountInput');
-    const keypadButtons = document.querySelectorAll('.keypad-btn');
-    
+    const keys = document.querySelectorAll('.keypad-btn');
     if (!amountInput) return;
-    
-    // Функция для форматирования вводимой суммы
     function formatInputAmount(value) {
-        // Убираем все нецифровые символы кроме точки
-        const cleanValue = value.replace(/[^\d]/g, '');
-        if (!cleanValue) return '0';
-        
-        // Форматируем с разделителями тысяч
-        return formatAmount(cleanValue);
+        const clean = value.replace(/[^\d]/g,'');
+        if (!clean) return '0';
+        return formatAmount(clean);
     }
-    
-    keypadButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const value = this.textContent.trim();
-            const currentValue = amountInput.value.replace(/[^\d]/g, '');
-            
+    keys.forEach(k => {
+        k.addEventListener('click', function() {
+            const v = this.textContent.trim();
+            const current = amountInput.value.replace(/[^\d]/g,'');
             if (this.querySelector('i.fa-backspace')) {
-                // Удаление последнего символа
-                const newValue = currentValue.slice(0, -1) || '0';
-                amountInput.value = formatInputAmount(newValue);
-            } else if (value === '00') {
-                // Добавление 00
-                const newValue = currentValue === '0' ? '0' : currentValue + '00';
-                amountInput.value = formatInputAmount(newValue);
+                const newV = current.slice(0,-1) || '0';
+                amountInput.value = formatInputAmount(newV);
+            } else if (v === '00') {
+                const newV = current === '0' ? '0' : current + '00';
+                amountInput.value = formatInputAmount(newV);
             } else {
-                // Добавление цифры
-                let newValue;
-                if (currentValue === '0') {
-                    newValue = value;
-                } else {
-                    newValue = currentValue + value;
-                }
-                amountInput.value = formatInputAmount(newValue);
+                let newV = current === '0' ? v : current + v;
+                amountInput.value = formatInputAmount(newV);
             }
         });
     });
-    
-    // Обработчик для ручного ввода
-    amountInput.addEventListener('input', function() {
-        this.value = formatInputAmount(this.value);
-    });
+    amountInput.addEventListener('input', function() { this.value = formatInputAmount(this.value); });
 }
-
-function initFormSubmission() {
-    const form = document.getElementById("transactionForm");
-    const modal = document.getElementById("transactionModal");
-    
-    if (!form) return;
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Получаем выбранный тип операции
-        const activeTypeBtn = document.querySelector('.type-btn.bg-red-600, .type-btn.bg-green-600');
-        if (!activeTypeBtn) {
-            alert('Выберите тип операции (Расход/Доход)');
-            return;
-        }
-        const transactionType = activeTypeBtn.dataset.type;
-        
-        // Проверяем сумму (убираем пробелы перед проверкой)
-        const amountValue = document.getElementById('amountInput').value.replace(/\s/g, '');
-        if (!amountValue || parseFloat(amountValue) <= 0 || amountValue === '0') {
-            alert('Введите корректную сумму');
-            return;
-        }
-        
-        // Проверяем категорию
-        const selectedCategory = document.getElementById('selectedCategory').value;
-        if (!selectedCategory) {
-            alert('Выберите категорию');
-            return;
-        }
-        
-        // ДОПОЛНИТЕЛЬНАЯ ПРОВЕРКА: Убедимся, что категория все еще существует
-        const categoryExists = window.categories && window.categories.some(cat => cat.id == selectedCategory);
-        if (!categoryExists) {
-            alert('Выбранная категория больше не существует. Пожалуйста, выберите другую категорию.');
-            // Обновляем список категорий в модалке
-            await updateGlobalCategories();
-            loadCategories();
-            return;
-        }
-        
-        const formData = new FormData();
-        formData.append('type', transactionType);
-        formData.append('amount', amountValue);
-        formData.append('category', selectedCategory);
-        formData.append('description', document.getElementById('descriptionInput').value);
-        
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-        try {
-            console.log('Отправка данных транзакции...');
-            const response = await fetch(window.ADD_TRANSACTION_URL, {
-                method: "POST",
-                headers: { 
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData,
-            });
-
-            const data = await response.json();
-            
-            if (data.success) {
-               animateModal(modal, false);
-
-
-                
-                // ДИНАМИЧЕСКОЕ ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
-                await updateInterfaceAfterTransaction(data);
-                
-                
-                showSuccessNotification('Транзакция успешна!');
-            } else {
-                alert(data.error || "Ошибка при сохранении");
-            }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert("Произошла ошибка при отправке формы");
-        }
-    });
-}
-
-// Функция для обновления интерфейса после добавления транзакции
-async function updateInterfaceAfterTransaction(data) {
-    // 1. Обновляем балансы
-    updateBalancesAfterTransaction(data.transaction_type, data.amount);
-    
-    // 2. Добавляем новую транзакцию в список
-    addTransactionToList(data.transaction);
-    
-    // 3. Скрываем подсказку для нового пользователя
-    hideWelcomeHint();
-    
-    // 4. Проверяем пустые состояния
-    checkEmptyStates();
-}
-
-// Функция для скрытия подсказки
-function hideWelcomeHint() {
-    const welcomeHint = document.getElementById('welcomeHint');
-    if (welcomeHint) {
-        // Добавляем анимацию исчезновения
-        welcomeHint.style.opacity = '0';
-        welcomeHint.style.transform = 'translateX(-50%) scale(0.8)';
-        welcomeHint.style.transition = 'all 0.3s ease';
-        
-        // Удаляем элемент после анимации
-        setTimeout(() => {
-            welcomeHint.remove();
-        }, 300);
-    }
-}
-
-
-// Обновляем функцию обновления баланса после транзакции
-function updateBalancesAfterTransaction(type, amount) {
-    const totalElement = document.getElementById('totalBalance');
-    const incomeElement = document.getElementById('monthIncome');
-    const expenseElement = document.getElementById('monthExpense');
-    
-    if (!totalElement || !incomeElement || !expenseElement) return;
-    
-    // Получаем текущие значения
-    const currentTotal = parseFloat(totalElement.textContent.replace(/\s/g, '').replace('с', ''));
-    const currentIncome = parseFloat(incomeElement.textContent.replace(/\s/g, '').replace('с', ''));
-    const currentExpense = parseFloat(expenseElement.textContent.replace(/\s/g, '').replace('с', ''));
-    
-    let newTotal = currentTotal;
-    let newIncome = currentIncome;
-    let newExpense = currentExpense;
-    
-    if (type === 'income') {
-        newTotal = currentTotal + parseFloat(amount);
-        newIncome = currentIncome + parseFloat(amount);
-    } else {
-        newTotal = currentTotal - parseFloat(amount);
-        newExpense = currentExpense + parseFloat(amount);
-    }
-    
-    // Обновляем отображение
-    totalElement.textContent = formatAmount(newTotal) + ' с';
-    incomeElement.textContent = formatAmount(newIncome) + ' с';
-    expenseElement.textContent = formatAmount(newExpense) + ' с';
-    
-    // Обновляем глобальные переменные
-    if (window.initialBalances) {
-        window.initialBalances.total = newTotal;
-        window.initialBalances.income = newIncome;
-        window.initialBalances.expense = newExpense;
-    }
-    
-    // Проверяем и скрываем приветственное уведомление
-    checkAndHideWelcomeHint();
-    
-    // Обновляем резерв
-    updateReserveDisplay();
-
-    // Обновляем резерв
-    updateReserveAfterTransaction(type, amount);
-}
-
-// Функция для добавления транзакции в список
-function addTransactionToList(transaction) {
-    const transactionsContainer = document.getElementById('transactionsListContainer');
-    if (!transactionsContainer) return;
-    
-    // Скрываем пустое состояние если оно отображается
-    const emptyStateAll = document.getElementById('emptyStateAll');
-    const emptyStateFiltered = document.getElementById('emptyStateFiltered');
-    
-    if (emptyStateAll) emptyStateAll.classList.add('hidden');
-    if (emptyStateFiltered) emptyStateFiltered.classList.add('hidden');
-    
-     // Скрываем подсказку при добавлении первой транзакции
-    hideWelcomeHint();
-    
-    // Форматируем дату
-    const transactionDate = new Date(transaction.created_at);
-    const formattedDate = transactionDate.toLocaleDateString('ru-RU');
-    const formattedTime = transactionDate.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
-    
-    
-    // Создаем HTML для новой транзакции
-    const transactionHTML = `
-    <div class="transaction-item bg-gray-800 rounded-lg p-3 flex justify-between items-center animate-fadeIn" 
-         data-category-id="${transaction.category_id}"
-         data-transaction-id="${transaction.id}">
-
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center" 
-                     style="background-color: ${transaction.category_color}22; color: ${transaction.category_color}">
-                    <i class="${transaction.category_icon}"></i>
-                </div>
-                <div>
-                    <p class="font-medium">${transaction.category_name}</p>
-                    ${transaction.description ? `<p class="text-xs text-gray-400">${transaction.description}</p>` : ''}
-                </div>
-            </div>
-            <div class="flex items-center space-x-3">
-                <div class="text-right">
-                    <p class="${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'} font-semibold">
-                        ${transaction.type === 'income' ? '+' : '-'}${formatAmount(transaction.amount)} с
-                    </p>
-                    <p class="text-xs text-gray-400">${formattedDate} ${formattedTime}</p>
-                </div>
-                <button class="delete-transaction-btn text-red-400 hover:text-red-300 p-2 transition-colors" 
-                        data-transaction-id="${transaction.id}"
-                        title="Удалить транзакцию">
-                    <i class="fas fa-trash text-sm"></i>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Добавляем транзакцию в начало списка
-    if (transactionsContainer.children.length > 0 && !transactionsContainer.children[0].classList.contains('transaction-item')) {
-        // Если первый элемент - пустое состояние, заменяем его
-        transactionsContainer.innerHTML = transactionHTML + transactionsContainer.innerHTML;
-    } else {
-        // Добавляем в начало
-        transactionsContainer.insertAdjacentHTML('afterbegin', transactionHTML);
-    }
-    
-    // Обновляем состояние кнопки "Загрузить еще"
-    const loadMoreContainer = document.getElementById('loadMoreContainer');
-    if (loadMoreContainer && loadMoreContainer.classList.contains('hidden')) {
-        // Проверяем, нужно ли показывать кнопку
-        checkIfHasMoreTransactionsAfterAdd();
-    }
-}
-
-
-
-// Функция для проверки наличия дополнительных транзакций после добавления
-async function checkIfHasMoreTransactionsAfterAdd() {
-    try {
-        // Используем текущие настройки фильтрации из history_sort.js
-        const currentFilter = window.currentFilter || 'week';
-        const currentCategory = window.currentCategory || 'all';
-        
-        const response = await fetch(`/get_transactions/?filter=${currentFilter}&page=2&limit=3&category=${currentCategory}`);
-        const data = await response.json();
-        
-        if (data.success && data.has_more) {
-            const loadMoreContainer = document.getElementById('loadMoreContainer');
-            if (loadMoreContainer) {
-                loadMoreContainer.classList.remove('hidden');
-            }
-        }
-    } catch (error) {
-        console.error('Ошибка при проверке наличия транзакций:', error);
-    }
-}
-
-
 
 function resetTransactionForm() {
-    const form = document.getElementById("transactionForm");
-    const amountInput = document.getElementById("amountInput");
-    const selectedCategoryInput = document.getElementById("selectedCategory");
-    
+    const form = document.getElementById('transactionForm');
     if (form) form.reset();
-    
-    // Сброс выбранной категории
-    if (selectedCategoryInput) selectedCategoryInput.value = '';
-    
-    // Сброс выделения категорий
-    document.querySelectorAll('.category-option-btn').forEach(btn => {
-        btn.classList.remove('bg-blue-600', 'border-blue-500', 'text-white');
-        btn.classList.add('bg-gray-700', 'border-gray-600', 'text-gray-300');
-    });
-    
-    // СБРОС КНОПОК ТИПА ОПЕРАЦИИ - НИЧЕГО НЕ АКТИВНО ПО УМОЛЧАНИЮ
-    const expenseBtn = document.querySelector('.type-btn[data-type="expense"]');
-    const incomeBtn = document.querySelector('.type-btn[data-type="income"]');
-    
-    if (expenseBtn && incomeBtn) {
-        // Сбрасываем все кнопки к неактивному состоянию
-        expenseBtn.classList.remove('bg-red-600', 'text-white', 'border-red-600');
-        expenseBtn.classList.add('bg-gray-700', 'text-gray-300', 'border-gray-600');
-        
-        incomeBtn.classList.remove('bg-green-600', 'text-white', 'border-green-600');
-        incomeBtn.classList.add('bg-gray-700', 'text-gray-300', 'border-gray-600');
-    }
-    
+    const selected = document.getElementById('selectedCategory');
+    if (selected) selected.value = '';
+    document.querySelectorAll('.category-carousel-btn').forEach(btn => btn.classList.remove('active'));
+    const amountInput = document.getElementById('amountInput');
     if (amountInput) amountInput.value = '0';
 }
 
-function loadCategories() {
-    const categoriesContainer = document.getElementById('categoriesContainer');
-    if (!categoriesContainer) {
-        console.error('Не найден контейнер категорий');
-        return;
-    }
-    
-    categoriesContainer.innerHTML = '';
-    
-    // Используем глобальные категории, которые мы обновляем
-    if (!window.categories || window.categories.length === 0) {
-        categoriesContainer.innerHTML = '<div class="text-center text-gray-500 py-4 col-span-3">Нет категорий</div>';
-        return;
-    }
-    
-    console.log('Загрузка категорий для модалки:', window.categories);
-    
-    window.categories.forEach(cat => {
-        const categoryButton = document.createElement('button');
-        categoryButton.type = 'button';
-        categoryButton.className = 'category-carousel-btn';
-        categoryButton.textContent = cat.name;
-        categoryButton.dataset.categoryId = cat.id;
-        
-        categoryButton.addEventListener('click', function() {
-            // Сбрасываем выделение у всех кнопок
-            document.querySelectorAll('.category-carousel-btn').forEach(btn => {
-                btn.classList.remove('active');
+
+
+
+function initFormSubmission() {
+    const form = document.getElementById('transactionForm');
+    if (!form) return;
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const activeTypeBtn = document.querySelector('.type-btn.bg-red-600, .type-btn.bg-green-600');
+        if (!activeTypeBtn) { alert('Выберите тип операции (Расход/Доход)'); return; }
+        const transactionType = activeTypeBtn.dataset.type;
+        const amountRaw = document.getElementById('amountInput').value.replace(/\s/g,'');
+        if (!amountRaw || parseFloat(amountRaw) <= 0) { alert('Введите корректную сумму'); return; }
+        const selectedCategory = document.getElementById('selectedCategory').value;
+        if (!selectedCategory) { alert('Выберите категорию'); return; }
+        const formData = new FormData();
+        formData.append('type', transactionType);
+        formData.append('amount', amountRaw);
+        formData.append('category', selectedCategory);
+        formData.append('description', document.getElementById('descriptionInput') ? document.getElementById('descriptionInput').value : '');
+        const csrfTokenEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        const csrfToken = csrfTokenEl ? csrfTokenEl.value : '';
+        try {
+            const resp = await fetch(window.ADD_TRANSACTION_URL || '/add_transaction/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
             });
-            
-            // Выделяем выбранную
-            this.classList.add('active');
-            
-            const selectedCategoryInput = document.getElementById('selectedCategory');
-            if (selectedCategoryInput) {
-                selectedCategoryInput.value = this.dataset.categoryId;
-                console.log('Выбрана категория:', this.dataset.categoryId, this.textContent);
-            }
-        });
-        
-        categoriesContainer.appendChild(categoryButton);
-    });
-    
-}
-
-// =============================================
-// ФИЛЬТРАЦИЯ ТРАНЗАКЦИЙ ПО КАТЕГОРИЯМ
-// =============================================
-
-// =============================================
-// ФИЛЬТРАЦИЯ ТРАНЗАКЦИЙ ПО КАТЕГОРИЯМ (ЛОКАЛЬНАЯ)
-// =============================================
-
-function initCategoryTabs() {
-    // Эта функция теперь используется только для локальной фильтрации
-    // когда система history_sort.js не активна (например, при начальной загрузке)
-    
-    const tabs = document.querySelectorAll('.tab');
-    const emptyStateAll = document.getElementById('emptyStateAll');
-    const emptyStateFiltered = document.getElementById('emptyStateFiltered');
-    
-    // Скрываем оба состояния при загрузке
-    if (emptyStateAll) emptyStateAll.style.display = 'none';
-    if (emptyStateFiltered) emptyStateFiltered.style.display = 'none';
-    
-    // Если система history_sort.js активна, не используем локальную фильтрацию
-    if (typeof window.loadTransactions === 'function') {
-        console.log('Используется система history_sort.js для фильтрации');
-        return;
-    }
-    
-    // Локальная фильтрация (только если history_sort.js не загружена)
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Убираем активный класс у всех вкладок
-            tabs.forEach(t => t.classList.remove('active'));
-            // Добавляем активный класс текущей вкладке
-            this.classList.add('active');
-            
-            const categoryId = this.dataset.category;
-            
-            // Получаем ВСЕ транзакции (даже те, что могут быть скрыты)
-            const allTransactionItems = document.querySelectorAll('.transaction-item');
-            let visibleCount = 0;
-            
-            // Показываем/скрываем транзакции в зависимости от выбранной категории
-            allTransactionItems.forEach(item => {
-                if (categoryId === 'all') {
-                    item.style.display = 'flex';
-                    visibleCount++;
+            const data = await resp.json();
+            if (data.success) {
+                // Закрываем модалку
+                const modal = document.getElementById('transactionModal');
+                if (modal) animateModal(modal, false);
+                // Обновляем баланс и ставим транзакцию наверх
+                if (data.transaction) window.addTransactionToList(data.transaction, true, false); 
+                if (data.updated_balances) {
+                    window.initialBalances = data.updated_balances;
+                    updateBalanceDisplay();
                 } else {
-                    const itemCategory = item.dataset.categoryId;
-                    if (itemCategory === categoryId) {
-                        item.style.display = 'flex';
-                        visibleCount++;
-                    } else {
-                        item.style.display = 'none';
-                    }
+                    // локально обновим
+                    updateBalancesAfterTransaction(transactionType, parseFloat(amountRaw));
                 }
-            });
-            
-            console.log(`Категория: ${categoryId}, Видимых транзакций: ${visibleCount}`);
-            
-            // Управляем отображением пустых состояний
-            updateEmptyStates(categoryId, visibleCount);
-        });
-    });
-    
-    // Функция для обновления пустых состояний
-    function updateEmptyStates(activeCategory, visibleCount) {
-        if (activeCategory === 'all') {
-            // Для вкладки "Все"
-            if (emptyStateAll) {
-                emptyStateAll.style.display = visibleCount === 0 ? 'block' : 'none';
+                showSuccessNotification('Транзакция успешна!');
+            } else {
+                alert(data.error || 'Ошибка при сохранении');
             }
-            if (emptyStateFiltered) {
-                emptyStateFiltered.style.display = 'none';
-            }
-        } else {
-            // Для конкретной категории
-            if (emptyStateAll) {
-                emptyStateAll.style.display = 'none';
-            }
-            if (emptyStateFiltered) {
-                emptyStateFiltered.style.display = visibleCount === 0 ? 'block' : 'none';
-            }
+        } catch (err) {
+            console.error('submit transaction error', err);
+            alert('Произошла ошибка при отправке формы');
         }
-        
-        console.log(`Empty states - All: ${emptyStateAll?.style.display}, Filtered: ${emptyStateFiltered?.style.display}`);
-    }
-
-    
-    // Инициализируем начальное состояние при загрузке
-    const activeTab = document.querySelector('.tab.active');
-    if (activeTab) {
-        const activeCategory = activeTab.dataset.category;
-        const allTransactionItems = document.querySelectorAll('.transaction-item');
-        
-        let initialVisibleCount = 0;
-        if (activeCategory === 'all') {
-            initialVisibleCount = allTransactionItems.length;
-        } else {
-            initialVisibleCount = Array.from(allTransactionItems).filter(
-                item => item.dataset.categoryId === activeCategory
-            ).length;
-        }
-        
-        updateEmptyStates(activeCategory, initialVisibleCount);
-    }
-}
-
-// =============================================
-// УПРАВЛЕНИЕ КАТЕГОРИЯМИ
-// =============================================
-
-function initCategoriesTab() {
-    const addCategoryBtn = document.getElementById('addCategoryBtn');
-    const categoryModal = document.getElementById('categoryModal');
-    const saveCategoryBtn = document.getElementById('saveCategoryBtn');
-    const closeCategoryModalBtns = document.querySelectorAll('.close-modal[data-modal="category"]');
-    
-// Открытие модалки добавления категории
-if (addCategoryBtn && categoryModal) {
-    addCategoryBtn.addEventListener('click', function() {
-        animateModal(categoryModal, true);
-        initIconsGrid();
-        initColorsGrid();
     });
 }
 
-// Закрытие модалки категории
-closeCategoryModalBtns.forEach(btn => {
-    btn.addEventListener('click', function() {
-        animateModal(categoryModal, false);
-    });
-});
 
-    // Сохранение категории
-    if (saveCategoryBtn) {
-        saveCategoryBtn.addEventListener('click', saveCategory);
-    }
-    
-    // Загрузка категорий при загрузке страницы
-    loadUserCategories();
-}
 
-function initIconsGrid() {
-    const iconsGrid = document.getElementById('iconsGrid');
-    if (!iconsGrid) return;
+function updateBalancesAfterTransaction(type, amount, reserveAmount = 0) {
+    if (!window.initialBalances) window.initialBalances = { 
+        total: 0, 
+        income: 0, 
+        expense: 0, 
+        total_reserve: 0,
+        monthly_reserve: 0 
+    };
     
-    const icons = [
-        'fas fa-utensils', 'fas fa-home', 'fas fa-car', 'fas fa-heart',
-        'fas fa-shopping-cart', 'fas fa-tv', 'fas fa-tshirt', 'fas fa-book',
-        'fas fa-gift', 'fas fa-money-bill-wave', 'fas fa-chart-line', 'fas fa-building',
-        'fas fa-briefcase', 'fas fa-phone', 'fas fa-wifi', 'fas fa-gas-pump'
-    ];
-    
-    iconsGrid.innerHTML = '';
-    
-    icons.forEach(icon => {
-        const iconBtn = document.createElement('button');
-        iconBtn.type = 'button';
-        iconBtn.className = 'icon-option p-3 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors text-gray-300';
-        iconBtn.innerHTML = `<i class="${icon} text-lg"></i>`;
-        iconBtn.dataset.icon = icon;
-        
-        iconBtn.addEventListener('click', function() {
-            document.querySelectorAll('.icon-option').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'text-white');
-                btn.classList.add('bg-gray-700', 'text-gray-300');
-            });
-            this.classList.remove('bg-gray-700', 'text-gray-300');
-            this.classList.add('bg-blue-600', 'text-white');
-        });
-        
-        iconsGrid.appendChild(iconBtn);
-    });
-}
+    let total = parseFloat(window.initialBalances.total || 0);
+    let income = parseFloat(window.initialBalances.income || 0);
+    let expense = parseFloat(window.initialBalances.expense || 0);
+    let total_reserve = parseFloat(window.initialBalances.total_reserve || 0);
+    let monthly_reserve = parseFloat(window.initialBalances.monthly_reserve || 0);
 
-function initColorsGrid() {
-    const colorsGrid = document.getElementById('colorsGrid');
-    if (!colorsGrid) return;
-    
-    const colors = [
-        '#ef4444', '#f97316', '#f59e0b', '#eab308',
-        '#84cc16', '#22c55e', '#10b981', 
-        '#06b6d4', '#6366f1',
-        '#ec4899'
-    ];
-    
-    colorsGrid.innerHTML = '';
-    
-    colors.forEach(color => {
-        const colorBtn = document.createElement('button');
-        colorBtn.type = 'button';
-        colorBtn.className = 'color-option w-8 h-8 rounded-full border-2 border-gray-600 mb-3';
-        colorBtn.style.backgroundColor = color;
-        colorBtn.dataset.color = color;
-        
-        colorBtn.addEventListener('click', function() {
-            document.querySelectorAll('.color-option').forEach(btn => {
-                btn.classList.remove('border-white', 'border-2');
-            });
-            this.classList.add('border-white', 'border-2');
-        });
-        
-        colorsGrid.appendChild(colorBtn);
-    });
-}
-
-async function saveCategory() {
-    const nameInput = document.getElementById('categoryNameInput');
-    const selectedIcon = document.querySelector('.icon-option.bg-blue-600');
-    const selectedColor = document.querySelector('.color-option.border-white');
-    
-    if (!nameInput || !nameInput.value.trim()) {
-        alert('Введите название категории');
-        return;
-    }
-    
-    if (!selectedIcon) {
-        alert('Выберите иконку для категории');
-        return;
-    }
-    
-    if (!selectedColor) {
-        alert('Выберите цвет для категории');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('name', nameInput.value.trim());
-    formData.append('icon', selectedIcon.dataset.icon);
-    formData.append('color', selectedColor.dataset.color);
-    
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    try {
-        const response = await fetch('/add_category/', {
-            method: "POST",
-            headers: { 
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData,
-        });
-        
-        const data = await response.json();
-        
-     if (data.success) {
-       animateModal(document.getElementById('categoryModal'), false);
-
-        nameInput.value = '';
-        
-        // Сбрасываем выделение иконки и цвета
-        document.querySelectorAll('.icon-option').forEach(btn => {
-            btn.classList.remove('bg-blue-600', 'text-white');
-            btn.classList.add('bg-gray-700', 'text-gray-300');
-        });
-        document.querySelectorAll('.color-option').forEach(btn => {
-            btn.classList.remove('border-white', 'border-2');
-        });
-        
-        // ОБНОВЛЯЕМ ВСЕ СПИСКИ КАТЕГОРИЙ
-        await loadUserCategories(); // для вкладки категорий (теперь со статистикой)
-        await updateGlobalCategories(); // для главной страницы и модалки транзакций
-        await updateCategoryTabs(); // для вкладок на главной
-        
-        showSuccessNotification('Категория добавлена!');
+    if (type === 'income') {
+        total += amount - reserveAmount;
+        income += amount;
+        total_reserve += reserveAmount;
+        monthly_reserve += reserveAmount; // добавляем к месячному резерву
     } else {
-        alert(data.error || "Ошибка при сохранении категории");
+        total -= amount;
+        expense += amount;
     }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        alert("Произошла ошибка при отправке формы");
+
+    window.initialBalances.total = total;
+    window.initialBalances.income = income;
+    window.initialBalances.expense = expense;
+    window.initialBalances.total_reserve = total_reserve;
+    window.initialBalances.monthly_reserve = monthly_reserve;
+    
+    updateBalanceDisplay();
+}
+
+function updateBalancesAfterDelete(type, amount, reserveAmount = 0) {
+    if (!window.initialBalances) window.initialBalances = { 
+        total: 0, 
+        income: 0, 
+        expense: 0, 
+        total_reserve: 0,
+        monthly_reserve: 0 
+    };
+    
+    let total = parseFloat(window.initialBalances.total || 0);
+    let income = parseFloat(window.initialBalances.income || 0);
+    let expense = parseFloat(window.initialBalances.expense || 0);
+    let total_reserve = parseFloat(window.initialBalances.total_reserve || 0);
+    let monthly_reserve = parseFloat(window.initialBalances.monthly_reserve || 0);
+
+    if (type === 'income') {
+        total -= amount - reserveAmount;
+        income -= amount;
+        total_reserve -= reserveAmount;
+        monthly_reserve -= reserveAmount; // вычитаем из месячного резерва
+    } else {
+        total += amount;
+        expense -= amount;
+    }
+
+    window.initialBalances.total = total;
+    window.initialBalances.income = income;
+    window.initialBalances.expense = expense;
+    window.initialBalances.total_reserve = total_reserve;
+    window.initialBalances.monthly_reserve = monthly_reserve;
+    
+    updateBalanceDisplay();
+}
+
+// -----------------------------
+// Управление подсказкой "Сделай первую транзакцию"
+// -----------------------------
+function updateWelcomeHint() {
+    const welcomeHint = document.getElementById('welcomeHint');
+    const transactionsContainer = document.getElementById('transactionsListContainer');
+    
+    if (!welcomeHint || !transactionsContainer) return;
+    
+    // Проверяем, есть ли транзакции в контейнере
+    const transactionItems = transactionsContainer.querySelectorAll('.transaction-item');
+    const hasVisibleTransactions = Array.from(transactionItems).some(item => {
+        return !item.innerHTML.includes('Удалить?') && !item.innerHTML.includes('Удалено');
+    });
+    
+    // Показываем или скрываем подсказку
+    if (hasVisibleTransactions) {
+        welcomeHint.classList.add('hidden');
+    } else {
+        welcomeHint.classList.remove('hidden');
     }
 }
 
+// -----------------------------
+// Инициализация навигации, табов и общий DOMContentLoaded
+// -----------------------------
+function initTabNavigation() {
+    const navItems = document.querySelectorAll('.mobile-nav-item');
+    const tabs = document.querySelectorAll('.mobile-tab');
+    const balanceBlock = document.querySelector('.mobile-header .bg-gradient-to-r');
+    navItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            navItems.forEach(n => n.classList.remove('active'));
+            this.classList.add('active');
+            tabs.forEach(t => t.classList.remove('active'));
+            if (balanceBlock) {
+                if (tabName === 'home') balanceBlock.classList.remove('hidden');
+                else balanceBlock.classList.add('hidden');
+            }
+            const active = document.getElementById(`tab-${tabName}`);
+            if (active) active.classList.add('active');
+            if (tabName === 'categories') loadUserCategories();
+        });
+    });
+}
+
+// -----------------------------
+// Загрузка категорий в модалку "Добавить запись"
+// -----------------------------
+async function loadCategoriesForModal() {
+    const container = document.getElementById('categoriesContainer');
+    if (!container) return;
+
+    try {
+        const response = await fetch('/get_categories/');
+        const data = await response.json();
+
+        container.innerHTML = '';
+
+        if (data.categories && data.categories.length > 0) {
+            data.categories.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'category-carousel-btn flex flex-col items-center p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-all duration-200';
+                btn.dataset.categoryId = cat.id;
+                btn.innerHTML = `
+                    <div class="w-10 h-10 flex items-center justify-center rounded-full mb-1"
+                         style="background-color:${cat.color}22; color:${cat.color}">
+                        <i class="${cat.icon}"></i>
+                    </div>
+                    <span class="text-xs text-gray-300 truncate w-12 text-center">${cat.name}</span>
+                `;
+
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.category-carousel-btn').forEach(b => b.classList.remove('ring-2', 'ring-blue-500'));
+                    this.classList.add('ring-2', 'ring-blue-500');
+                    document.getElementById('selectedCategory').value = cat.id;
+                });
+
+                container.appendChild(btn);
+            });
+        } else {
+            container.innerHTML = `<div class="text-gray-500 text-sm text-center py-4">Нет категорий</div>`;
+        }
+    } catch (e) {
+        console.error('Ошибка загрузки категорий для модалки:', e);
+    }
+}
+
+
+
+
+// -----------------------------
+// Загрузка категорий на главной
+// -----------------------------
 async function loadUserCategories() {
     const categoriesList = document.getElementById('categoriesList');
     if (!categoriesList) return;
@@ -902,9 +1201,10 @@ categoryElement.className = 'category-item bg-gray-800 rounded-lg p-3 flex justi
                                 ${category.percentage}%
                             </div>
                         ` : ''}
-                        <button class="delete-category-btn text-red-400 hover:text-red-300 p-2 transition-colors" data-category-id="${category.id}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <button class="delete-category-btn text-gray-400 hover:text-red-500 p-2 transition-colors opacity-100 visible" data-category-id="${category.id}">
+    <i class="fas fa-trash"></i>
+</button>
+
                     </div>
                 `;
                 
@@ -949,25 +1249,27 @@ async function deleteCategory(categoryId) {
     const originalContent = categoryElement.innerHTML;
     
     // Заменяем содержимое на компактное подтверждение удаления (такого же размера)
-    categoryElement.innerHTML = `
-        <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
-                    <i class="fas fa-question-circle text-yellow-400"></i>
-                </div>
-                <span class="text-gray-200 font-medium">Удалить категорию?</span>
-            </div>
-            <div class="flex items-center space-x-2">
-                <button class="confirm-category-delete-btn bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-medium transition-colors" 
-                        data-category-id="${categoryId}">
-                    Да
-                </button>
-                <button class="cancel-category-delete-btn bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-medium transition-colors">
-                    Нет
-                </button>
-            </div>
-        </div>
-    `;
+categoryElement.classList.add('flex', 'items-center', 'justify-between', 'p-4', 'bg-gray-800', 'border', 'border-gray-700', 'rounded-xl');
+categoryElement.innerHTML = `
+    <div class="flex items-center space-x-2">
+        <i class="fas fa-trash text-red-400"></i>
+        <span class="text-gray-200 text-sm font-medium">Удалить категорию?</span>
+    </div>
+    <div class="flex items-center space-x-2">
+        
+        <button class="cancel-category-delete-btn bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all">
+            Нет
+        </button>
+
+        <button class="confirm-category-delete-btn bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition-all"
+                data-category-id="${categoryId}">
+            Да
+        </button>
+    </div>
+`;
+
+
+
     
     // Обработчик подтверждения удаления
     const confirmBtn = categoryElement.querySelector('.confirm-category-delete-btn');
@@ -991,100 +1293,490 @@ async function deleteCategory(categoryId) {
     });
 }
 
-// Функция для выполнения удаления категории
+
+
+
+// -----------------------------
+// УДАЛЕНИЕ КАТЕГОРИИ (без возврата подтверждения после ошибки)
+// -----------------------------
 async function processCategoryDeletion(categoryId, categoryElement) {
+    const originalContent = categoryElement.innerHTML;
+
     try {
         const response = await fetch(`/delete_category/${categoryId}/`);
         const data = await response.json();
-        
+
+        // 🟢 УСПЕШНОЕ УДАЛЕНИЕ
         if (data.success) {
-            // Показываем сообщение об успешном удалении (такого же размера)
             categoryElement.innerHTML = `
-                <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3">
+                <div class="w-full flex items-center justify-between animate-popIn">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                            <i class="fas fa-check-circle text-green-400"></i>
+                        <div class="w-10 h-10 rounded-full bg-green-500/15 flex items-center justify-center ring-2 ring-green-400/30 shadow-inner shadow-green-600/10">
+                            <i class="fas fa-check text-green-400 text-lg"></i>
                         </div>
-                        <span class="text-green-400 font-medium">Удалено</span>
+                        <div class="flex flex-col">
+                            <span class="text-green-400 font-semibold text-sm tracking-wide">Категория удалена!</span>
+                            <span class="text-gray-400 text-xs">Данные успешно обновлены :)</span>
+                        </div>
                     </div>
+                    <i class="fas fa-circle-check text-green-400 text-xl opacity-80"></i>
                 </div>
             `;
-            
-            // Удаляем элемент через 1.5 секунды
+
+            // Ждём 2 секунды — показываем подтверждение
             setTimeout(() => {
-                categoryElement.remove();
-          
-                
-                // Проверяем, не пустой ли список категорий
-                const categoriesList = document.getElementById('categoriesList');
-                if (categoriesList && categoriesList.children.length === 0) {
-                    categoriesList.innerHTML = `
-                        <div class="text-center py-8 text-gray-500" id="emptyCategoriesState">
-                            <i class="fas fa-tags text-3xl mb-3"></i>
-                            <p>Категорий пока нет</p>
-                        </div>
-                    `;
-                }
-            }, 1500);
-            
-            // Обновляем глобальные списки категорий
-            await updateGlobalCategories();
-            await updateCategoryTabs();
-            await loadUserCategories(); // Перезагружаем категории со статистикой
-        } else {
-            // В случае ошибки показываем сообщение и восстанавливаем элемент
-            categoryElement.innerHTML = `
-                <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <i class="fas fa-exclamation-circle text-red-400"></i>
-                        </div>
-                        <span class="text-red-400 font-medium">Ошибка! Категория содержит записи!</span>
-                    </div>
-                </div>
-            `;
-            
-            setTimeout(() => {
-                categoryElement.innerHTML = originalContent;
-                
-                // Переинициализируем обработчик удаления
-                const deleteBtn = categoryElement.querySelector('.delete-category-btn');
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', function() {
-                        deleteCategory(categoryId);
-                    });
-                }
-            }, 2000);
+                categoryElement.classList.add('animate-fade-out');
+                setTimeout(() => categoryElement.remove(), 300);
+            }, 1800);
+
+            // Обновляем списки после анимации
+            setTimeout(async () => {
+                await updateGlobalCategories();
+                await updateCategoryTabs();
+                await loadUserCategories();
+            }, 2200);
+
+            return;
         }
-    } catch (error) {
-        console.error('Ошибка:', error);
+
+        // 🔴 ЕСЛИ ОШИБКА (категория содержит записи)
         categoryElement.innerHTML = `
-            <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3">
+            <div class="w-full flex items-center justify-between animate-popIn">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 flex-shrink-0 rounded-full bg-red-500/15 flex items-center justify-center ring-2 ring-green-400/30 shadow-inner shadow-red-600/10">
+                            <i class="fas fa-triangle-exclamation text-red-400 text-lg"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-red-400 font-semibold text-sm tracking-wide">Ошибка!</span>
+                            <span class="text-gray-400 text-xs">Категория содержит данные и не может быть удалена!</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-circle-check text-red-400 text-xl opacity-80"></i>
+                </div>
+        `;
+
+        // Ошибка пропадает через 2 секунды, и элемент просто возвращается к нормальному виду
+        setTimeout(async () => {
+            // Загружаем список заново, без возврата вопроса “Удалить категорию?”
+            await loadUserCategories();
+        }, 2500);
+
+        return;
+
+    } catch (error) {
+        // ⚠️ Ошибка соединения
+        console.error('Ошибка удаления категории:', error);
+
+        categoryElement.innerHTML = `
+            <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3 animate-popIn">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                        <i class="fas fa-exclamation-circle text-red-400"></i>
+                        <i class="fas fa-exclamation-triangle text-red-400"></i>
                     </div>
-                    <span class="text-red-400 font-medium">Ошибка</span>
+                    <div class="flex flex-col">
+                        <span class="text-red-400 font-semibold text-sm">Ошибка соединения</span>
+                        <span class="text-gray-400 text-xs">Проверьте интернет и попробуйте снова.</span>
+                    </div>
                 </div>
             </div>
         `;
-        
-        setTimeout(() => {
-            categoryElement.innerHTML = originalContent;
-            
-            // Переинициализируем обработчик удаления
-            const deleteBtn = categoryElement.querySelector('.delete-category-btn');
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', function() {
-                    deleteCategory(categoryId);
-                });
-            }
+
+        // После ошибки тоже просто обновляем список — не показываем "Удалить?"
+        setTimeout(async () => {
+            await loadUserCategories();
         }, 2000);
     }
 }
 
-// Функция для показа уведомления об успехе
-function showSuccessNotification(message) {
+
+
+// -----------------------------
+// Модалка добавления категории
+// -----------------------------
+function initCategoryModal() {
+    const modal = document.getElementById('categoryModal');
+    const openBtn = document.getElementById('addCategoryBtn');
+    const saveBtn = document.getElementById('saveCategoryBtn'); // 🟢 кнопка "Сохранить"
+    const closeBtns = modal ? modal.querySelectorAll('.close-modal, [data-modal="category"]') : [];
+
+    if (openBtn && modal) {
+        openBtn.addEventListener('click', () => {
+            animateModal(modal, true);
+            resetCategoryForm();
+
+            // 🟢 При открытии модалки загружаем иконки и цвета
+            initIconsGrid();
+            initColorsGrid();
+        });
+    }
+
+    // 🟢 Сохранение категории
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveCategory);
+    }
+
+    // Кнопки закрытия
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', () => animateModal(modal, false));
+    });
+
+    // Закрытие по клику вне содержимого
+    if (modal) {
+        modal.addEventListener('click', e => {
+            if (e.target === modal) animateModal(modal, false);
+        });
+    }
+}
+
+function resetCategoryForm() {
+    const nameInput = document.getElementById('categoryNameInput');
+    if (nameInput) nameInput.value = '';
+
+    const iconGrid = document.getElementById('iconsGrid');
+    const colorGrid = document.getElementById('colorsGrid');
+    if (iconGrid) iconGrid.innerHTML = '';
+    if (colorGrid) colorGrid.innerHTML = '';
+
+    // 🟢 Сбрасываем активные выделения
+    document.querySelectorAll('.icon-option').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-700', 'text-gray-300');
+    });
+    document.querySelectorAll('.color-option').forEach(btn => {
+        btn.classList.remove('border-white', 'border-2');
+    });
+}
+
+
+// -----------------------------
+// СЕТКИ ИКОНОК И ЦВЕТОВ ДЛЯ МОДАЛКИ КАТЕГОРИЙ
+// -----------------------------
+function initIconsGrid() {
+    const iconsGrid = document.getElementById('iconsGrid');
+    if (!iconsGrid) return;
+
+    const icons = [
+        'fas fa-utensils', 'fas fa-home', 'fas fa-car', 'fas fa-heart',
+        'fas fa-shopping-cart', 'fas fa-tv', 'fas fa-tshirt', 'fas fa-book',
+        'fas fa-gift', 'fas fa-money-bill-wave', 'fas fa-chart-line', 'fas fa-building',
+        'fas fa-briefcase', 'fas fa-phone', 'fas fa-wifi', 'fas fa-gas-pump'
+    ];
+
+    iconsGrid.innerHTML = '';
+    icons.forEach(icon => {
+        const iconBtn = document.createElement('button');
+        iconBtn.type = 'button';
+        iconBtn.className = 'icon-option p-3 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors text-gray-300';
+        iconBtn.innerHTML = `<i class="${icon} text-lg"></i>`;
+        iconBtn.dataset.icon = icon;
+
+        iconBtn.addEventListener('click', function() {
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-700', 'text-gray-300');
+            });
+            this.classList.remove('bg-gray-700', 'text-gray-300');
+            this.classList.add('bg-blue-600', 'text-white');
+        });
+
+        iconsGrid.appendChild(iconBtn);
+    });
+}
+
+function initColorsGrid() {
+    const colorsGrid = document.getElementById('colorsGrid');
+    if (!colorsGrid) return;
+
+    const colors = [
+        '#ef4444', '#f97316', '#f59e0b', '#eab308',
+        '#84cc16', '#22c55e', '#10b981',
+        '#06b6d4', '#6366f1', '#ec4899'
+    ];
+
+    colorsGrid.innerHTML = '';
+    colors.forEach(color => {
+        const colorBtn = document.createElement('button');
+        colorBtn.type = 'button';
+        colorBtn.className = 'color-option w-8 h-8 rounded-full border-2 border-gray-600 mb-3';
+        colorBtn.style.backgroundColor = color;
+        colorBtn.dataset.color = color;
+
+        colorBtn.addEventListener('click', function() {
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.classList.remove('border-white', 'border-2');
+            });
+            this.classList.add('border-white', 'border-2');
+        });
+
+        colorsGrid.appendChild(colorBtn);
+    });
+}
+
+
+async function saveCategory() {
+    const nameInput = document.getElementById('categoryNameInput');
+    const selectedIcon = document.querySelector('.icon-option.bg-blue-600');
+    const selectedColor = document.querySelector('.color-option.border-white');
+
+    if (!nameInput || !nameInput.value.trim()) {
+        alert('Введите название категории');
+        return;
+    }
+
+    if (!selectedIcon) {
+        alert('Выберите иконку для категории');
+        return;
+    }
+
+    if (!selectedColor) {
+        alert('Выберите цвет для категории');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('name', nameInput.value.trim());
+    formData.append('icon', selectedIcon.dataset.icon);
+    formData.append('color', selectedColor.dataset.color);
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    try {
+        const response = await fetch('/add_category/', {
+            method: "POST",
+            headers: { 
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            animateModal(document.getElementById('categoryModal'), false);
+            nameInput.value = '';
+
+            // Сбрасываем выделение иконки и цвета
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-700', 'text-gray-300');
+            });
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.classList.remove('border-white', 'border-2');
+            });
+
+            // Обновляем категории в приложении
+            await updateGlobalCategories();
+            if (typeof updateCategoryTabs === 'function') await updateCategoryTabs();
+            if (typeof loadUserCategories === 'function') await loadUserCategories();
+
+            showSuccessNotification('Категория добавлена!');
+        } else {
+            alert(data.error || "Ошибка при сохранении категории");
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert("Произошла ошибка при отправке формы");
+    }
+}
+
+
+
+// -----------------------------
+// МОДАЛКА МЕНЮ / ПАНЕЛЬ УПРАВЛЕНИЯ
+// -----------------------------
+function initMenuModal() {
+    const modal = document.getElementById('menuModal');
+    const openBtn = document.getElementById('menuBtn'); // кнопка открытия (⚙️)
+    const closeBtn = modal ? modal.querySelector('button[onclick="toggleMenuModal()"]') : null;
+
+    if (!modal) {
+        console.warn('menuModal не найден');
+        return;
+    }
+
+    // Создаём глобальную функцию для совместимости с onclick в HTML
+    window.toggleMenuModal = function(show) {
+        if (!modal) return;
+
+        const isVisible = !modal.classList.contains('hidden');
+        if (show === true || (!isVisible && show !== false)) {
+            animateModal(modal, true);
+        } else {
+            animateModal(modal, false);
+        }
+    };
+
+    // Открытие панели (по кнопке ⚙️)
+    if (openBtn) {
+        openBtn.addEventListener('click', () => {
+            console.log('Открытие меню');
+            toggleMenuModal(true);
+        });
+    }
+
+    // Кнопка "Закрыть"
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => toggleMenuModal(false));
+    }
+
+    // Закрытие при клике вне окна
+    modal.addEventListener('click', e => {
+        if (e.target === modal) toggleMenuModal(false);
+    });
+
+    // Логика сохранения процентов и цели
+    const saveReserveBtn = document.getElementById('saveReserveBtn');
+    const saveTargetReserveBtn = document.getElementById('saveTargetReserveBtn');
+
+if (saveReserveBtn) {
+    saveReserveBtn.addEventListener('click', async () => {
+        const btn = saveReserveBtn;
+        const percent = parseFloat(document.getElementById('reservePercentageInput').value);
+
+        if (isNaN(percent) || percent < 0 || percent > 100) {
+            showErrorNotification('Введите процент от 0 до 100');
+            return;
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        const formData = new FormData();
+        formData.append('reserve_percentage', percent);
+
+        try {
+            // Визуальное состояние «сохранения»
+            btn.disabled = true;
+            const oldText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Сохранение...`;
+
+            const response = await fetch('/update_reserve_percentage/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                window.initialReservePercentage = percent;
+                document.getElementById('currentReservePercent').textContent = `${percent}%`;
+                
+                // Обновляем отображение процента в блоке резерва
+                const reservePercentageDisplay = document.getElementById('reservePercentageDisplay');
+                if (reservePercentageDisplay) {
+                    reservePercentageDisplay.textContent = percent;
+                }
+                
+                // ОБНОВЛЯЕМ УВЕДОМЛЕНИЕ О РЕЗЕРВЕ
+                updateReserveNotification();
+                
+                showSuccessNotification('Успешно сохранено!');
+                btn.innerHTML = `<i class="fas fa-check mr-2 text-green-400"></i>Сохранено`;
+                
+                setTimeout(() => animateModal(document.getElementById('menuModal'), false), 1000);
+            } else {
+                showErrorNotification(data.error || 'Ошибка при сохранении');
+                btn.innerHTML = `<i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Ошибка`;
+            }
+        } catch (e) {
+            console.error('Ошибка при сохранении процента резерва:', e);
+            showErrorNotification('Ошибка при соединении с сервером');
+            btn.innerHTML = `<i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Ошибка`;
+        } finally {
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-save mr-2"></i>Сохранить`;
+            }, 2000);
+        }
+    });
+}
+
+
+
+
+// Функция для обновления видимости уведомления о резерве
+function updateReserveNotification() {
+    const reserveNotification = document.getElementById('reserveNotification');
+    if (!reserveNotification) return;
+    
+    if (window.initialReservePercentage === 0) {
+        reserveNotification.classList.remove('hidden');
+    } else {
+        reserveNotification.classList.add('hidden');
+    }
+}
+
+
+if (saveTargetReserveBtn) {
+    saveTargetReserveBtn.addEventListener('click', async () => {
+        const btn = saveTargetReserveBtn;
+        const target = parseFloat(document.getElementById('targetReserveInput').value);
+
+        if (isNaN(target) || target < 0) {
+            showErrorNotification('Введите корректную сумму цели');
+            return;
+        }
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        const formData = new FormData();
+        formData.append('target_reserve', target);
+
+        try {
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Сохранение...`;
+
+            const response = await fetch('/update_target_reserve/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                window.initialTargetReserve = target;
+                
+                // Обновляем отображение в меню
+                const currentTargetReserveEl = document.getElementById('currentTargetReserve');
+                if (currentTargetReserveEl) {
+                    currentTargetReserveEl.textContent = `${formatAmount(target)} с`;
+                }
+                
+                // ОБНОВЛЯЕМ ВСЕ ЭЛЕМЕНТЫ ЦЕЛЕВОГО РЕЗЕРВА
+                updateSavingsDisplay();
+                
+                showSuccessNotification('Успешно сохранено!');
+                btn.innerHTML = `<i class="fas fa-check mr-2 text-green-400"></i>Сохранено`;
+                setTimeout(() => animateModal(document.getElementById('menuModal'), false), 1000);
+            } else {
+                showErrorNotification(data.error || 'Ошибка при сохранении');
+                btn.innerHTML = `<i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Ошибка`;
+            }
+        } catch (e) {
+            console.error('Ошибка при сохранении целевого резерва:', e);
+            showErrorNotification('Ошибка при соединении с сервером');
+            btn.innerHTML = `<i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Ошибка`;
+        } finally {
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-save mr-2"></i>Сохранить`;
+            }, 2000);
+        }
+    });
+}
+}
+
+
+// -----------------------------
+// Уведомления (успех / ошибка)
+// -----------------------------
+function showErrorNotification(message) {
     const notificationContainer = document.getElementById('notificationContainer');
     if (!notificationContainer) {
         console.error('Контейнер для уведомлений не найден');
@@ -1094,12 +1786,12 @@ function showSuccessNotification(message) {
     // Очищаем предыдущие уведомления
     notificationContainer.innerHTML = '';
     
-    // Создаем уведомление с иконкой
+    // Создаем уведомление с иконкой ошибки
     const notification = document.createElement('div');
-    notification.className = 'notification-inline flex items-center px-3 py-1.5 rounded-lg text-sm bg-gray-800/80 backdrop-blur-sm border border-gray-700';
+    notification.className = 'notification-inline flex items-center px-3 py-1.5 rounded-lg text-sm bg-gray-800/80 backdrop-blur-sm border border-red-600/50';
     notification.innerHTML = `
-        
-        <span><i class="fas fa-bell mr-2 text-blue-400"></i> ${message}</span>
+        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+        <span class="text-red-400">${message}</span>
     `;
     
     // Добавляем в контейнер
@@ -1118,983 +1810,61 @@ function showSuccessNotification(message) {
     }, 2000);
 }
 
-// Инициализация при загрузке страницы
-document.addEventListener("DOMContentLoaded", function() {
-    initCategoriesTab();
-});
-
-// =============================================
-// ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
-// =============================================
-
-initTabNavigation
-
-// Функция для переинициализации системы фильтрации
-function reinitializeTransactionFilter() {
-    // Просто перезагружаем транзакции с текущими настройками
-    if (typeof window.loadTransactions === 'function') {
-        window.loadTransactions();
-    }
-}
 
 
-function initTabNavigation() {
-    const navItems = document.querySelectorAll('.mobile-nav-item');
-    const tabs = document.querySelectorAll('.mobile-tab');
-    const balanceBlock = document.querySelector('.mobile-header .bg-gradient-to-r'); // Блок баланса
 
-    navItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const tabName = this.dataset.tab;
-            console.log('Переключение на вкладку:', tabName);
+// -----------------------------
+// Экспортируем необходимые функции в global
+// -----------------------------
+window.initTransactionFilter = initTransactionFilter;
+window.loadTransactions = loadTransactions;
+window.updateCategoryTabsHandlers = updateCategoryTabsHandlers;
+window.checkEmptyStatesAfterChange = checkEmptyStatesAfterChange;
+window.updateGlobalCategories = updateGlobalCategories;
+window.initTransactionModal = initTransactionModal;
+window.initTabNavigation = initTabNavigation;
 
-            // Убираем активный класс у всех элементов навигации
-            navItems.forEach(navItem => {
-                navItem.classList.remove('active');
-            });
 
-            // Добавляем активный класс текущему элементу навигации
-            this.classList.add('active');
-
-            // Скрываем все вкладки
-            tabs.forEach(tab => {
-                tab.classList.remove('active');
-            });
-
-            // Управляем отображением баланса
-            if (balanceBlock) {
-                if (tabName === 'home') {
-                    balanceBlock.classList.remove('hidden');
-                } else {
-                    balanceBlock.classList.add('hidden');
-                }
-            }
-
-            // Показываем выбранную вкладку
-            const activeTab = document.getElementById(`tab-${tabName}`);
-            if (activeTab) {
-                activeTab.classList.add('active');
-                activeTab.classList.add('animate-fadeIn');
-
-                if (tabName === 'categories') {
-                    loadUserCategories();
-                }
-            } else {
-                console.error('Вкладка не найдена: ', `tab-${tabName}`);
-            }
-        });
-    });
-}
-
-// Инициализация при загрузке страницы
-document.addEventListener("DOMContentLoaded", function() {
-    initTabNavigation();
-});
-
-// =============================================
-// ОБНОВЛЕНИЕ ГЛОБАЛЬНОГО СПИСКА КАТЕГОРИЙ
-// =============================================
-
-async function updateGlobalCategories() {
+// -----------------------------
+// Главная инициализация при загрузке
+// -----------------------------
+document.addEventListener('DOMContentLoaded', function() {
     try {
-        const response = await fetch('/get_categories/');
-        const data = await response.json();
+        // Форматируем балансы при загрузке страницы
+        updateBalanceDisplay();
         
-        if (data.categories) {
-            // Обновляем глобальную переменную categories
-            window.categories = data.categories;
-            console.log('Обновлены глобальные категории:', window.categories);
-            
-            // Обновляем категории в модальном окне транзакции (если оно открыто)
-            const modal = document.getElementById("transactionModal");
-            if (modal && !modal.classList.contains('hidden')) {
-                console.log('Модальное окно открыто, обновляем категории внутри');
-                loadCategories();
-            }
-        }
-    } catch (error) {
-        console.error('Ошибка при обновлении глобальных категорий:', error);
-    }
-}
-
-// =============================================
-// ОБНОВЛЕНИЕ ВКЛАДОК КАТЕГОРИЙ НА ГЛАВНОЙ
-// =============================================
-
-async function updateCategoryTabs() {
-    try {
-        const response = await fetch('/get_categories/');
-        const data = await response.json();
+        // Форматируем все элементы резерва при загрузке страницы
+        formatAllReserveElements();
         
-        if (data.categories) {
-            const tabsWrapper = document.getElementById('tabsWrapper');
-            if (!tabsWrapper) return;
-            
-            // Сохраняем активную вкладку
-            const activeTab = tabsWrapper.querySelector('.tab.active');
-            const activeCategory = activeTab ? activeTab.dataset.category : 'all';
-            
-            // Сохраняем вкладку "Все"
-            const allTab = tabsWrapper.querySelector('.tab[data-category="all"]');
-            tabsWrapper.innerHTML = '';
-            tabsWrapper.appendChild(allTab);
-            
-            // Добавляем все категории
-            data.categories.forEach(cat => {
-                const tab = document.createElement('div');
-                tab.className = 'tab';
-                tab.dataset.category = cat.id;
-                tab.innerHTML = `<span>${cat.name}</span>`;
-                
-                // Восстанавливаем активное состояние
-                if (cat.id == activeCategory) {
-                    tab.classList.add('active');
-                }
-                
-                tabsWrapper.appendChild(tab);
-            });
-            
-            // Переинициализируем обработчики событий для вкладок
-            if (typeof window.updateCategoryTabsHandlers === 'function') {
-                window.updateCategoryTabsHandlers();
-            } else {
-                // Fallback на локальную инициализацию
-                initCategoryTabs();
-            }
-        }
-    } catch (error) {
-        console.error('Ошибка при обновлении вкладок категорий:', error);
-    }
-}
-
-// =============================================
-// УДАЛЕНИЕ ТРАНЗАКЦИЙ (ДЕЛЕГИРОВАНИЕ СОБЫТИЙ)
-// =============================================
-
-function initTransactionDeletion() {
-    // Используем делегирование событий для обработки всех кнопок удаления
-    document.addEventListener('click', function(e) {
-        const deleteBtn = e.target.closest('.delete-transaction-btn');
-        if (deleteBtn) {
-            const transactionId = deleteBtn.dataset.transactionId;
-            
-            // Предотвращаем множественные срабатывания
-            e.stopPropagation();
-            e.preventDefault();
-            
-            deleteTransaction(transactionId);
-        }
-    });
-}
-
-function initCategoryDeletion() {
-    document.addEventListener('click', function(e) {
-        const deleteBtn = e.target.closest('.delete-category-btn');
-        if (deleteBtn) {
-            const categoryId = deleteBtn.dataset.categoryId;
-            
-            // Предотвращаем множественные срабатывания
-            e.stopPropagation();
-            e.preventDefault();
-            
-            deleteCategory(categoryId);
-        }
-    });
-}
-
-// =============================================
-// УДАЛЕНИЕ ТРАНЗАКЦИЙ С ИНЛАЙН-ПОДТВЕРЖДЕНИЕМ
-// =============================================
-
-async function deleteTransaction(transactionId) {
-    const transactionElement = document.querySelector(`[data-transaction-id="${transactionId}"]`);
-    if (!transactionElement) return;
-    
-    // Сохраняем данные о транзакции ДО замены содержимого
-    const amountText = transactionElement.querySelector('.font-semibold')?.textContent;
-    const amountMatch = amountText?.match(/([+-])([\d\s]+)\s*с/);
-    let transactionData = null;
-    
-    if (amountMatch) {
-        transactionData = {
-            sign: amountMatch[1],
-            amountValue: parseFloat(amountMatch[2].replace(/\s/g, ''))
-        };
-    }
-    
-    // Сохраняем оригинальное содержимое для возможного восстановления
-    const originalContent = transactionElement.innerHTML;
-    
-    // Заменяем содержимое на компактное подтверждение удаления
-    transactionElement.innerHTML = `
-<div class="w-full flex items-center justify-between py-1">
-    <div class="flex items-center space-x-2">
-        <i class="fas fa-trash text-red-400"></i>
-        <span class="text-gray-200 text-sm font-medium">Удалить?</span>
-    </div>
-    <div class="flex items-center space-x-2" style="align-items: flex-start">
-        <button class="cancel-delete-btn bg-gray-500 hover:bg-gray-400 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors" style="height: fit-content">
-            Отмена
-        </button>
-        <button class="confirm-delete-btn bg-red-500 hover:bg-red-400 text-white px-3 py-1.5 rounded text-sm font-medium transition-colors" 
-                data-transaction-id="${transactionId}" style="height: fit-content">
-            Удалить
-        </button>
-    </div>
-</div>
-    `;
-    
-    // Обработчик подтверждения удаления
-    const confirmBtn = transactionElement.querySelector('.confirm-delete-btn');
-    confirmBtn.addEventListener('click', async function() {
-        await processTransactionDeletion(transactionId, transactionElement, transactionData);
-    });
-    
-    // Обработчик отмены удаления - просто возвращаем исходное состояние
-    const cancelBtn = transactionElement.querySelector('.cancel-delete-btn');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            // Возвращаем оригинальное содержимое
-            transactionElement.innerHTML = originalContent;
-            
-            // Переинициализируем обработчик удаления
-            const deleteBtn = transactionElement.querySelector('.delete-transaction-btn');
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', function() {
-                    deleteTransaction(transactionId);
-                });
-            }
-        });
-    }
-}
-
-// Функция для выполнения удаления транзакции
-async function processTransactionDeletion(transactionId, transactionElement, transactionData) {
-    try {
-        const response = await fetch(`/delete_transaction/${transactionId}/`);
-        const data = await response.json();
+        // Обновляем отображение сбережений при загрузке
+        updateSavingsDisplay();
         
-        if (data.success) {
-            // Обновляем балансы на лету, если есть данные о транзакции
-            if (transactionData) {
-                updateBalancesAfterDeletion(transactionData.sign, transactionData.amountValue);
-            }
-            
-            // Показываем сообщение об успешном удалении (такого же размера)
-            transactionElement.innerHTML = `
-                <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                            <i class="fas fa-check-circle text-green-400"></i>
-                        </div>
-                        <span class="text-green-400 font-medium">Удалено</span>
-                    </div>
-                </div>
-            `;
-            
-            // Удаляем элемент через 1.5 секунды
-           setTimeout(() => {
-    transactionElement.remove();
-    if (typeof window.checkEmptyStatesAfterChange === 'function') {
-        window.checkEmptyStatesAfterChange();
-    } else if (typeof window.checkEmptyStates === 'function') {
-        window.checkEmptyStates();
-    }
-}, 1500);
+        updateWelcomeHint();
 
-        } else {
-            // В случае ошибки показываем сообщение и восстанавливаем элемент
-            transactionElement.innerHTML = `
-                <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                            <i class="fas fa-exclamation-circle text-red-400"></i>
-                        </div>
-                        <span class="text-red-400 font-medium">Ошибка</span>
-                    </div>
-                </div>
-            `;
-            
-            setTimeout(() => {
-                transactionElement.innerHTML = originalContent;
-                
-                // Переинициализируем обработчик удаления
-                const deleteBtn = transactionElement.querySelector('.delete-transaction-btn');
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', function() {
-                        deleteTransaction(transactionId);
-                    });
-                }
-            }, 2000);
+        // Показываем приветствие при необходимости
+        if (window.isNewUser) {
+            setTimeout(() => { showSuccessNotification('Добро пожаловать!'); }, 800);
         }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        transactionElement.innerHTML = `
-            <div class="w-full flex items-center justify-between bg-gray-800 rounded-lg p-3">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
-                        <i class="fas fa-exclamation-circle text-red-400"></i>
-                    </div>
-                    <span class="text-red-400 font-medium">Ошибка</span>
-                </div>
-            </div>
-        `;
-        
+
+        // Инициализируем модалки и интерфейс
+        initTabNavigation();
+        initTransactionModal();
+        initCategoryModal();
+        initMenuModal();
+
+        // Инициализируем фильтры/загрузку транзакций
+        if (typeof initTransactionFilter === 'function') initTransactionFilter();
+        if (typeof updateCategoryTabsHandlers === 'function') updateCategoryTabsHandlers();
+
+        // Загружаем категории и транзакции при старте
+        updateGlobalCategories();
+        updateReserveNotification();
         setTimeout(() => {
-            transactionElement.innerHTML = originalContent;
-            
-            // Переинициализируем обработчик удаления
-            const deleteBtn = transactionElement.querySelector('.delete-transaction-btn');
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', function() {
-                    deleteTransaction(transactionId);
-                });
+            if (document.getElementById('transactionsListContainer') && document.getElementById('transactionsListContainer').children.length === 0) {
+                loadTransactions();
             }
-        }, 2000);
-    }
-}
-
-/// Обновляем функцию обновления баланса после удаления транзакции
-function updateBalancesAfterDeletion(sign, amountValue) {
-    const totalElement = document.getElementById('totalBalance');
-    const incomeElement = document.getElementById('monthIncome');
-    const expenseElement = document.getElementById('monthExpense');
-    
-    if (!totalElement || !incomeElement || !expenseElement) return;
-    
-    const currentTotal = parseFloat(totalElement.textContent.replace(/\s/g, '').replace('с', ''));
-    const currentIncome = parseFloat(incomeElement.textContent.replace(/\s/g, '').replace('с', ''));
-    const currentExpense = parseFloat(expenseElement.textContent.replace(/\s/g, '').replace('с', ''));
-    
-    let newTotal = currentTotal;
-    let newIncome = currentIncome;
-    let newExpense = currentExpense;
-    
-    if (sign === '+') {
-        newTotal = currentTotal - amountValue;
-        newIncome = currentIncome - amountValue;
-    } else {
-        newTotal = currentTotal + amountValue;
-        newExpense = currentExpense - amountValue;
-    }
-    
-    // Обновляем отображение
-    totalElement.textContent = formatAmount(newTotal) + ' с';
-    incomeElement.textContent = formatAmount(newIncome) + ' с';
-    expenseElement.textContent = formatAmount(newExpense) + ' с';
-    
-    // Обновляем глобальные переменные
-    if (window.initialBalances) {
-        window.initialBalances.total = newTotal;
-        window.initialBalances.income = newIncome;
-        window.initialBalances.expense = newExpense;
-    }
-    
-    // Проверяем и скрываем приветственное уведомление
-    checkAndHideWelcomeHint();
-    
-    // Обновляем резерв
-    updateReserveDisplay();
-
-    // Обновляем резерв
-    const type = sign === '+' ? 'income' : 'expense';
-    updateReserveAfterTransaction(type, -amountValue); // Отрицательное значение для удаления
-
-}
-
-
-// Функция проверки пустых состояний (уже есть, но убедимся что она корректна)
-function checkEmptyStates() {
-    const transactionsContainer = document.getElementById('transactionsListContainer');
-    if (!transactionsContainer) return;
-    
-    // Ищем только элементы транзакций (исключая уведомления об удалении)
-    const allTransactionElements = transactionsContainer.querySelectorAll('.transaction-item');
-    const actualTransactions = Array.from(allTransactionElements).filter(item => {
-        // Проверяем, что это не уведомление об удалении
-        return !item.innerHTML.includes('Запись удалена');
-    });
-    
-    const visibleTransactions = actualTransactions.filter(item => {
-        return item.style.display !== 'none' && item.style.height !== '0px';
-    });
-    
-    // Показываем пустое состояние, если транзакций не осталось
-    const emptyStateAll = document.getElementById('emptyStateAll');
-    const emptyStateFiltered = document.getElementById('emptyStateFiltered');
-    
-    if (visibleTransactions.length === 0) {
-        // Проверяем активную вкладку
-        const activeTab = document.querySelector('.tab.active');
-        const activeCategory = activeTab ? activeTab.dataset.category : 'all';
-        
-        if (activeCategory === 'all') {
-            if (emptyStateAll) emptyStateAll.style.display = 'block';
-            if (emptyStateFiltered) emptyStateFiltered.style.display = 'none';
-        } else {
-            if (emptyStateAll) emptyStateAll.style.display = 'none';
-            if (emptyStateFiltered) emptyStateFiltered.style.display = 'block';
-        }
-    } else {
-        // Скрываем оба пустых состояния если есть транзакции
-        if (emptyStateAll) emptyStateAll.style.display = 'none';
-        if (emptyStateFiltered) emptyStateFiltered.style.display = 'none';
-    }
-}
-
-// =============================================
-// ФОРМАТИРОВАНИЕ СУММ
-// =============================================
-
-function formatAmount(amount) {
-    // Преобразуем в число, округляем до целого, форматируем с разделителями тысяч
-    const number = typeof amount === 'string' ? parseFloat(amount) : amount;
-    const rounded = Math.round(number);
-    
-    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-// Функция для применения форматирования ко всем суммам на странице
-function formatAllAmounts() {
-    // Форматируем основные балансы
-    const totalElement = document.getElementById('totalBalance');
-    const incomeElement = document.getElementById('monthIncome');
-    const expenseElement = document.getElementById('monthExpense');
-    const netProfitElement = document.getElementById('netProfit'); // Добавляем чистую прибыль
-    
-    if (totalElement) {
-        const currentText = totalElement.textContent.replace(' с', '');
-        totalElement.textContent = formatAmount(currentText) + ' с';
-    }
-    
-    if (incomeElement) {
-        const currentText = incomeElement.textContent.replace(' с', '');
-        incomeElement.textContent = formatAmount(currentText) + ' с';
-    }
-    
-    if (expenseElement) {
-        const currentText = expenseElement.textContent.replace(' с', '');
-        expenseElement.textContent = formatAmount(currentText) + ' с';
-    }
-    
-    // Форматируем чистую прибыль
-    if (netProfitElement) {
-        const currentText = netProfitElement.textContent;
-        netProfitElement.textContent = formatAmount(currentText);
-    }
-    
-    // Форматируем суммы в истории операций
-    const transactionAmounts = document.querySelectorAll('.transaction-item .font-semibold');
-    transactionAmounts.forEach(element => {
-        const text = element.textContent;
-        // Ищем шаблон: +- число с
-        const match = text.match(/([+-])(\d+(?:\.\d+)?)\s*с/);
-        if (match) {
-            const sign = match[1];
-            const amount = match[2];
-            element.textContent = `${sign}${formatAmount(amount)} с`;
-        }
-    });
-    
-    // Форматируем суммы в статистике
-    const statElements = ['weekIncome', 'weekExpense', 'monthIncomeStat', 'monthExpenseStat'];
-    statElements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element && element.textContent !== '0') {
-            element.textContent = formatAmount(element.textContent);
-        }
-    });
-}
-
-
-
-// =============================================
-// ОБНОВЛЕНИЕ РАЗДЕЛА СТАТИСТИКОЙ
-// =============================================
-function updateStatsSection() {
-    if (!window.initialBalances) return;
-
-    const incomeStat = document.getElementById('monthIncomeStat');
-    const expenseStat = document.getElementById('monthExpenseStat');
-    const currentBalanceEl = document.getElementById('currentBalance');
-    const netProfitEl = document.getElementById('netProfit');
-
-    const { total, income, expense } = window.initialBalances;
-    const netProfit = income - expense;
-
-    if (incomeStat) incomeStat.textContent = formatAmount(income);
-    if (expenseStat) expenseStat.textContent = formatAmount(expense);
-    if (currentBalanceEl) currentBalanceEl.textContent = formatAmount(total);
-    if (netProfitEl) netProfitEl.textContent = formatAmount(netProfit);
-
-    // проценты оставляем фиксированными по макету
-}
-
-
-// =============================================
-// ОБНОВЛЕНИЕ ТОП КАТЕГОРИЙ (адаптировано под get_categories_with_stats)
-// =============================================
-async function updateTopCategories() {
-    const container = document.getElementById('topCategories');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="text-center py-4 text-gray-400">
-            <div class="inline-block animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-            <p class="text-sm mt-2">Загрузка...</p>
-        </div>
-    `;
-
-    try {
-        const response = await fetch('/get_categories_with_stats/?period=month');
-        const data = await response.json();
-
-        if (data.categories && data.categories.length > 0) {
-            container.innerHTML = '';
-
-            data.categories.forEach(cat => {
-                const isExpense = cat.expense_amount > 0;
-                const amount = cat.expense_amount || 0;
-                const percent = cat.percentage || 0;
-                const iconColor = cat.color || '#999';
-                const bgColor = `${iconColor}22`;
-
-               const itemHTML = `
-    <div class="flex items-center justify-between p-3 bg-gray-800/40 rounded-xl animate-fadeIn">
-                        <div class="flex items-center">
-                            <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3"
-                                 style="background-color:${bgColor}; color:${iconColor};">
-                                <i class="${cat.icon}"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium">${cat.name}</p>
-                                <p class="text-xs text-gray-400">1 транзакция</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-bold text-red-400">-${formatAmount(amount)} <span class="currency-symbol text-xs">с</span></p>
-                            <p class="text-xs text-gray-400">${percent}% расходов</p>
-                        </div>
-                    </div>
-                `;
-
-                container.insertAdjacentHTML('beforeend', itemHTML);
-            });
-        } else {
-            container.innerHTML = `
-                <div class="text-center py-8 text-gray-500">
-                    <i class="fas fa-tags text-3xl mb-3"></i>
-                    <p>Нет данных за этот период</p>
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Ошибка при загрузке топ категорий:', error);
-        container.innerHTML = `
-            <div class="text-center py-8 text-red-400">
-                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
-                <p>Ошибка загрузки категорий</p>
-            </div>
-        `;
-    }
-}
-
-
-/// =============================================
-// ОБНОВЛЕНИЕ СТАТИСТИКИ РЕЗЕРВА
-// =============================================
-function updateReserveDisplay() {
-    if (!window.initialBalances || !window.initialReservePercentage || window.initialTargetReserve === undefined) return;
-    
-    const income = window.initialBalances.income || 0;
-    const reservePercentage = window.initialReservePercentage;
-    const targetReserve = window.initialTargetReserve || 0;
-    
-    // Расчет текущего резерва
-    const currentReserve = income * (reservePercentage / 100);
-    
-    // Расчет прогресса
-    const progress = targetReserve > 0 ? Math.min(100, (currentReserve / targetReserve) * 100) : 0;
-    const remaining = Math.max(0, targetReserve - currentReserve);
-    
-    // Обновляем отображение в основном блоке
-    const reserveElement = document.getElementById('reserveAmount');
-    if (reserveElement) {
-        reserveElement.textContent = formatAmount(Math.round(currentReserve));
-    }
-    
-    // Обновляем отображение в статистике
-    updateReserveStats(currentReserve, progress, remaining);
-}
-
-function updateReserveStats(currentReserve, progress, remaining) {
-    // Обновляем элементы в статистике
-    const elements = {
-        'currentReserveAmount': formatAmount(Math.round(currentReserve)),
-        'reservePercentageDisplay': window.initialReservePercentage,
-        'reserveProgressText': progress.toFixed(1) + '%',
-        'monthlyReserveAmount': formatAmount(Math.round(currentReserve)), // Используем текущий резерв
-        'totalReserveAmount': formatAmount(Math.round(currentReserve)),
-        'targetReserveAmount': formatAmount(Math.round(window.initialTargetReserve)) + ' с',
-        'remainingToTarget': formatAmount(Math.round(remaining)) + ' с'
-    };
-    
-    // Обновляем все элементы
-    Object.keys(elements).forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = elements[id];
-        }
-    });
-    
-    // Обновляем прогресс-бар
-    const progressBar = document.getElementById('reserveProgressBar');
-    if (progressBar) {
-        progressBar.style.width = progress + '%';
-    }
-}
-
-// Функция для обновления резерва после транзакции
-function updateReserveAfterTransaction(type, amount) {
-    if (type === 'income') {
-        // При доходе увеличиваем резерв
-        const reserveIncrease = amount * (window.initialReservePercentage / 100);
-        // Здесь можно добавить логику для обновления данных
-    }
-    updateReserveDisplay();
-}
-
-
-
-
-document.addEventListener("DOMContentLoaded", () => {
-    const reserveInput = document.getElementById('reservePercentageInput');
-    const saveReserveBtn = document.getElementById('saveReserveBtn');
-
-    if (!reserveInput || !saveReserveBtn) return;
-
-
-
-    saveReserveBtn.addEventListener('click', () => {
-        const newValue = parseFloat(reserveInput.value);
-        if (isNaN(newValue) || newValue < 0 || newValue > 100) {
-            alert('Введите значение от 0 до 100');
-            return;
-        }
-
-        reservePercentage = newValue;
-        localStorage.setItem('reservePercentage', newValue);
-        updateReserveDisplay();
-
-        // Визуально показываем успех
-        saveReserveBtn.disabled = true;
-        saveReserveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Сохранено';
-        saveReserveBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
-        saveReserveBtn.classList.add('bg-green-600');
-
-        // Закрываем модалку через 1.2 секунды
-        setTimeout(() => {
-            const menuModal = document.getElementById('menuModal');
-            if (menuModal) toggleModal('menuModal', false);
-
-            // Возвращаем кнопку к исходному виду
-            setTimeout(() => {
-                saveReserveBtn.disabled = false;
-                saveReserveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
-                saveReserveBtn.classList.remove('bg-green-600');
-                saveReserveBtn.classList.add('bg-blue-600', 'hover:bg-blue-500');
-            }, 400);
-        }, 1200);
-    });
-});
-
-
-// === Универсальная анимация модалок ===
-function animateModal(modal, show = true) {
-    const modalContent = modal.querySelector('.modal-content');
-    if (show) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        if (modalContent) {
-            modalContent.classList.remove('animate-modalHide');
-            modalContent.classList.add('animate-modalShow');
-        }
-    } else {
-        if (modalContent) {
-            modalContent.classList.remove('animate-modalShow');
-            modalContent.classList.add('animate-modalHide');
-        }
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 200);
-    }
-}
-
-
-
-
-// =============================================
-// ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ
-// =============================================
-
-document.addEventListener("DOMContentLoaded", function() {
-    initLogoAnimation();
-    initTransactionModal();
-    updateBalanceDisplay();
-    updateStatsSection();
-    updateTopCategories();
- 
-    // Инициализируем систему фильтрации
-    if (typeof initTransactionFilter === 'function') {
-        initTransactionFilter();
-    }
-    
-    // Проверяем приветственное уведомление при загрузке
-    setTimeout(() => {
-        checkAndHideWelcomeHint();
-    }, 1000);
-
-    initTabNavigation();
-    initCategoriesTab();
-    initTransactionDeletion();
-    initCategoryDeletion();
-
-    // Форматируем все суммы на странице
-    formatAllAmounts();
-    
-    // Загружаем актуальные категории при загрузке страницы
-    updateGlobalCategories();
-});
-
-
-
-
-// Обработчики для сохранения настроек резерва
-document.addEventListener("DOMContentLoaded", function() {
-    // Сохранение процента резерва
-    const saveReserveBtn = document.getElementById('saveReserveBtn');
-    if (saveReserveBtn) {
-        saveReserveBtn.addEventListener('click', saveReservePercentage);
-    }
-    
-    // Сохранение целевого резерва
-    const saveTargetReserveBtn = document.getElementById('saveTargetReserveBtn');
-    if (saveTargetReserveBtn) {
-        saveTargetReserveBtn.addEventListener('click', saveTargetReserve);
-    }
-});
-
-async function saveReservePercentage() {
-    const input = document.getElementById('reservePercentageInput');
-    const newValue = parseInt(input.value);
-    
-    if (isNaN(newValue) || newValue < 0 || newValue > 100) {
-        alert('Введите значение от 0 до 100');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('reserve_percentage', newValue);
-    
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    try {
-        const response = await fetch('/update_reserve_percentage/', {
-            method: "POST",
-            headers: { 
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData,
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            window.initialReservePercentage = newValue;
-            updateReserveDisplay();
-            showSuccessNotification('Успешно обновлено!');
-        } else {
-            alert(data.error || "Ошибка при сохранении");
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        alert("Произошла ошибка при отправке формы");
-    }
-}
-
-async function saveTargetReserve() {
-    const input = document.getElementById('targetReserveInput');
-    const newValue = parseInt(input.value);
-    
-    if (isNaN(newValue) || newValue < 0) {
-        alert('Введите корректную сумму');
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append('target_reserve', newValue);
-    
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    try {
-        const response = await fetch('/update_target_reserve/', {
-            method: "POST",
-            headers: { 
-                'X-CSRFToken': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: formData,
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            window.initialTargetReserve = newValue;
-            updateReserveDisplay();
-            showSuccessNotification('Успешно обновлен!');
-            
-        } else {
-            alert(data.error || "Ошибка при сохранении");
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        alert("Произошла ошибка при отправке формы");
-    }
-}
-
-
-// =============================================
-// ОБРАБОТКА СОХРАНЕНИЯ ПРОЦЕНТА РЕЗЕРВА И ЦЕЛЕВОГО РЕЗЕРВА
-// =============================================
-
-document.addEventListener("DOMContentLoaded", function() {
-    const reserveInput = document.getElementById('reservePercentageInput');
-    const saveReserveBtn = document.getElementById('saveReserveBtn');
-    const targetReserveInput = document.getElementById('targetReserveInput');
-    const saveTargetReserveBtn = document.getElementById('saveTargetReserveBtn');
-
-    // Обработчик для сохранения процента резерва
-    if (saveReserveBtn && reserveInput) {
-        saveReserveBtn.addEventListener('click', async function() {
-            const newValue = parseInt(reserveInput.value);
-            if (isNaN(newValue) || newValue < 0 || newValue > 100) {
-                alert('Введите значение от 0 до 100');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('reserve_percentage', newValue);
-
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-            try {
-                const response = await fetch('/update_reserve_percentage/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Обновляем глобальную переменную
-                    window.initialReservePercentage = newValue;
-
-                    // Обновляем отображение резерва
-                    updateReserveDisplay();
-
-                    // Обновляем отображение в меню
-                    document.getElementById('currentReservePercent').textContent = newValue + '%';
-
-                    // Показываем уведомление об успехе
-                    showSuccessNotification('Успешно обновлено!');
-
-                    // Меняем стиль кнопки на успех
-                    saveReserveBtn.disabled = true;
-                    saveReserveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Сохранено';
-                    saveReserveBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
-                    saveReserveBtn.classList.add('bg-green-600');
-
-                    // Возвращаем обратно через 2 секунды
-                    setTimeout(() => {
-                        saveReserveBtn.disabled = false;
-                        saveReserveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
-                        saveReserveBtn.classList.remove('bg-green-600');
-                        saveReserveBtn.classList.add('bg-blue-600', 'hover:bg-blue-500');
-                    }, 2000);
-                } else {
-                    alert(data.error || 'Ошибка при сохранении');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                alert('Ошибка соединения');
-            }
-        });
-    }
-
-    // Обработчик для сохранения целевого резерва
-    if (saveTargetReserveBtn && targetReserveInput) {
-        saveTargetReserveBtn.addEventListener('click', async function() {
-            const newValue = parseFloat(targetReserveInput.value);
-            if (isNaN(newValue) || newValue < 0) {
-                alert('Введите корректное значение');
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append('target_reserve', newValue);
-
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-            try {
-                const response = await fetch('/update_target_reserve/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // Обновляем глобальную переменную
-                    window.initialTargetReserve = newValue;
-
-                    // Обновляем отображение резерва
-                    updateReserveDisplay();
-
-                    // Обновляем отображение в меню
-                    document.getElementById('currentTargetReserve').textContent = formatAmount(newValue) + ' с';
-
-                    // Показываем уведомление об успехе
-                    showSuccessNotification('Успешно обновлен!');
-
-                    // Меняем стиль кнопки на успех
-                    saveTargetReserveBtn.disabled = true;
-                    saveTargetReserveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Сохранено';
-                    saveTargetReserveBtn.classList.remove('bg-purple-600', 'hover:bg-purple-500');
-                    saveTargetReserveBtn.classList.add('bg-green-600');
-
-                    // Возвращаем обратно через 2 секунды
-                    setTimeout(() => {
-                        saveTargetReserveBtn.disabled = false;
-                        saveTargetReserveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
-                        saveTargetReserveBtn.classList.remove('bg-green-600');
-                        saveTargetReserveBtn.classList.add('bg-purple-600', 'hover:bg-purple-500');
-                    }, 2000);
-                } else {
-                    alert(data.error || 'Ошибка при сохранении');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                alert('Ошибка соединения');
-            }
-        });
+        }, 300);
+    } catch (e) {
+        console.error('Initialization error', e);
     }
 });

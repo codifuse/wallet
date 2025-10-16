@@ -288,12 +288,11 @@ function openEditNoteModal(note) {
 
 
 
-// Обновленная функция saveNote с анимацией кнопки
+// Сохранение заметки
 function saveNote() {
     const title = document.getElementById('noteTitleInput').value.trim();
     const content = document.getElementById('noteContentInput').value.trim();
     const reminderDateValue = document.getElementById('reminderDateInput').value;
-    const saveBtn = document.getElementById('saveNoteBtn');
 
     if (!title) {
         showNoteNotification('Заголовок пуст!', 'error');
@@ -311,23 +310,17 @@ function saveNote() {
         }
     }
 
-    // Сохраняем оригинальное состояние кнопки
-    const originalHtml = saveBtn.innerHTML;
-    const originalClasses = saveBtn.className;
-
-    // Меняем кнопку на состояние "Сохранение..."
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Сохранение...';
-    saveBtn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
-    saveBtn.classList.add('bg-blue-400');
-
     const formData = new FormData();
     formData.append('title', title);
     formData.append('content', content);
     
     if (reminderDateValue) {
+        // Получаем выбранную дату и время
         const selectedDate = new Date(reminderDateValue);
-        const timezoneOffset = -selectedDate.getTimezoneOffset();
+        
+        // Форматируем дату в ISO строку с указанием временной зоны
+        // Это гарантирует, что сервер получит правильное время
+        const timezoneOffset = -selectedDate.getTimezoneOffset(); // в минутах
         const timezoneOffsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
         const timezoneOffsetMinutes = Math.abs(timezoneOffset) % 60;
         const timezoneSign = timezoneOffset >= 0 ? '+' : '-';
@@ -338,9 +331,14 @@ function saveNote() {
         const hours = String(selectedDate.getHours()).padStart(2, '0');
         const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
         
+        // Форматируем дату с временной зоной
         const isoDate = `${year}-${month}-${day}T${hours}:${minutes}:00${timezoneSign}${String(timezoneOffsetHours).padStart(2, '0')}:${String(timezoneOffsetMinutes).padStart(2, '0')}`;
         
         formData.append('reminder_date', isoDate);
+        
+        console.log('Reminder date sent to server:', isoDate);
+        console.log('Local time:', `${year}-${month}-${day} ${hours}:${minutes}`);
+        console.log('Timezone offset:', timezoneOffset, 'minutes');
     }
 
     const url = currentEditingNoteId ? `/edit_note/${currentEditingNoteId}/` : '/add_note/';
@@ -361,64 +359,20 @@ function saveNote() {
     })
     .then(data => {
         if (data.success) {
-            // Успешное сохранение - меняем кнопку на "Сохранено"
-            saveBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Сохранено!';
-            saveBtn.classList.remove('bg-blue-400');
-            saveBtn.classList.add('bg-green-600');
-
-            // Закрываем модалку через 1.2 секунды
-            setTimeout(() => {
-                animateModal(document.getElementById('noteModal'), false);
-                
-                // Возвращаем кнопку в исходное состояние после закрытия модалки
-                setTimeout(() => {
-                    saveBtn.disabled = false;
-                    saveBtn.innerHTML = originalHtml;
-                    saveBtn.className = originalClasses;
-                }, 300);
-            }, 1200);
-
+            document.getElementById('noteModal').classList.add('hidden');
             loadNotes();
             showNoteNotification(currentEditingNoteId ? 'Заметка обновлена!' : 'Заметка создана!', 'success');
         } else {
-            // Ошибка - возвращаем кнопку в исходное состояние
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = originalHtml;
-            saveBtn.className = originalClasses;
             showNoteNotification(data.error || 'Ошибка при сохранении заметки', 'error');
         }
     })
     .catch(error => {
         console.error('Ошибка:', error);
-        // Ошибка - возвращаем кнопку в исходное состояние
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = originalHtml;
-        saveBtn.className = originalClasses;
         showNoteNotification('Произошла ошибка при отправке формы: ' + error.message, 'error');
     });
 }
 
-// Также обновляем функцию openAddNoteModal для сброса состояния кнопки при открытии
-function openAddNoteModal() {
-    console.log('Opening add note modal');
-    currentEditingNoteId = null;
-    document.getElementById('noteModalTitle').textContent = 'Новая заметка';
-    document.getElementById('noteTitleInput').value = '';
-    document.getElementById('noteContentInput').value = '';
-    document.getElementById('reminderDateInput').value = '';
-    
-    // Сбрасываем состояние кнопки сохранения
-    const saveBtn = document.getElementById('saveNoteBtn');
-    if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
-        saveBtn.className = 'btn-primary w-full py-3';
-    }
-    
-    animateModal(document.getElementById('noteModal'), true);
-}
-
-// И функцию openEditNoteModal тоже обновляем
+// Открытие модалки редактирования заметки
 function openEditNoteModal(note) {
     console.log('Opening edit note modal for note:', note.id);
     currentEditingNoteId = note.id;
@@ -428,27 +382,22 @@ function openEditNoteModal(note) {
     
     if (note.reminder_date) {
         const reminderDate = new Date(note.reminder_date);
-        const year = reminderDate.getFullYear();
-        const month = String(reminderDate.getMonth() + 1).padStart(2, '0');
-        const day = String(reminderDate.getDate()).padStart(2, '0');
-        const hours = String(reminderDate.getHours()).padStart(2, '0');
-        const minutes = String(reminderDate.getMinutes()).padStart(2, '0');
         
-        document.getElementById('reminderDateInput').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+        // Форматируем дату для input[type=datetime-local] в правильном формате
+        // Учитываем локальный часовой пояс браузера
+        const localDate = new Date(reminderDate.getTime() - (reminderDate.getTimezoneOffset() * 60000));
+        const localISODate = localDate.toISOString().slice(0, 16);
+        
+        document.getElementById('reminderDateInput').value = localISODate;
+        console.log('Setting reminder date input to:', localISODate);
     } else {
         document.getElementById('reminderDateInput').value = '';
     }
     
-    // Сбрасываем состояние кнопки сохранения
-    const saveBtn = document.getElementById('saveNoteBtn');
-    if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Сохранить';
-        saveBtn.className = 'btn-primary w-full py-3';
-    }
-    
     animateModal(document.getElementById('noteModal'), true);
+
 }
+
 
 
 // Открытие модалки редактирования заметки
