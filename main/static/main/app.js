@@ -412,7 +412,7 @@ window.addTransactionToList = function(transaction, animate = true, append = fal
                 </div>
                 <div>
                     <p class="font-medium">${transaction.category_name || transaction.category || 'Прочее'}</p>
-                    ${transaction.description ? `<p class="text-xs text-gray-400">${transaction.description}</p>` : ''}
+                    ${transaction.description ? `<p class="text-xs text-gray-400 line-clamp-1 [max-width:20ch]">${transaction.description}</p>` : ''}
                 </div>
             </div>
             <div class="flex items-center space-x-3">
