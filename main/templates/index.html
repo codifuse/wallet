@@ -3,10 +3,10 @@
 <html lang="ru">
 <head>
     <!-- PWA мета-теги -->
-    <meta name="application-name" content="Koinda">
+    <meta name="application-name" content="coinza">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Koinda">
+    <meta name="apple-mobile-web-app-title" content="coinza">
     <meta name="description" content="Приложение для учета личных финансов">
     <meta name="format-detection" content="telephone=no">
     <meta name="mobile-web-app-capable" content="yes">
@@ -29,7 +29,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Koinda - Учет расходов</title>
+    <title>Coinza - Управляй финансами просто!</title>
     <meta name="theme-color" content="#0f172a">
 
     <!-- CDN и локальные стили -->
@@ -43,31 +43,24 @@
     <!-- Основной контейнер приложения -->
     <div class="app-container">
        <!-- Верхний бар с логотипом, уведомлением и меню -->
-<div class="mobile-header">
-    <div class="flex justify-between items-center mb-4 relative">
-        <!-- Логотип и версия -->
-        <div class="flex items-center relative flex-shrink-0">
-            <div class="relative">
-                <img id="logo2" src="{% static 'main/ico.svg' %}" alt="Koinda" class="h-10">
-                <span class="absolute -top-1 -right-5 text-[10px] text-gray-400 font-medium">
-                    v1.25
-                </span>
-            </div>
-        </div>
-
-<!-- Уведомление по центру -->
-<div id="notificationContainer"
-     class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none text-sm z-50"></div>
-
-
-        <!-- Кнопка меню -->
-        <div class="flex items-center space-x-2 text-sm flex-shrink-0">
-            <button id="menuBtn" class="bg-gray-800 hover:bg-gray-700 px-4 py-2 rounded-lg flex items-center space-x-2">
-                <i class="fas fa-bars text-gray-300"></i>
-            </button>
-        </div>
-    </div>
+<!-- Хедер -->
+<div class="mobile-header bg-gray-900 px-4 h-14 flex items-center justify-between">
+  <div class="flex items-center h-full">
+    <img id="logo2" src="{% static 'main/ico.svg' %}" alt="coinza" class="h-7">
+    <span class="ml-1 text-[10px] text-gray-400 font-medium leading-none">v1.26</span>
+  </div>
+  
+  <!-- Контейнер уведомлений ВНУТРИ хедера -->
+  <div id="notificationContainer"></div>
+  
+  <button id="menuBtn" class="bg-gray-800 hover:bg-gray-700 h-full px-3 rounded-lg flex items-center justify-center">
+    <i class="fas fa-bars text-gray-300"></i>
+  </button>
 </div>
+
+
+
+
 
         <!-- Главная вкладка -->
         <div class="mobile-tab active" id="tab-home">

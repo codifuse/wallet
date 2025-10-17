@@ -699,8 +699,7 @@ function showReminderNotification(reminder) {
             <i class="fas fa-bell mr-3 p-1 text-yellow-300 animate-pulse"></i>
             <div class="flex-1 p2">
                 <div class="font-semibold text-white text-xs mb-0">Напоминание</div>
-                <div class="text-gray-200 text-xs font-medium">${escapeHtml(truncatedTitle)}</div>
-            </div>
+               
         </div>
     `;
 

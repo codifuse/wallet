@@ -39,8 +39,9 @@ body.modal-open {
     border-bottom: 1px solid rgba(71, 85, 105, 0.5);
     height: 60px;
     box-sizing: border-box;
-    flex-shrink: 0; /* Не сжимается при скролле */
+    flex-shrink: 0;
 }
+
 .mobile-header .flex.justify-between.items-center {
     margin-bottom: 0.25rem;
     padding-top: 0.25rem;
@@ -212,20 +213,32 @@ body.modal-open {
     font-weight: 500;
 }
 
-/* Уведомления */
+/* Сами уведомления */
+/* Сами уведомления */
 .notification-inline {
-    background: rgba(73, 37, 235, 0.15);
-    border: 1px solid rgba(37, 99, 235, 0.3);
-    color: white;
+    pointer-events: auto;
+    background: rgba(73, 37, 235, 0.25);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #fff;
     border-radius: 0.75rem;
-    max-width: 200px;
+    /* ⬇⬇⬇ ЭТИ СТРОКИ УПРАВЛЯЮТ ВЫСОТОЙ ⬇⬇⬇ */
+    padding: 0.5rem 1.2rem; /* ← vertical padding влияет на высоту */
+    font-size: 0.85rem;     /* ← размер шрифта тоже влияет на высоту */
+    /* Можно добавить явную высоту: */
+    min-height: 10px; 
+    height: 35px; 
     white-space: nowrap;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    max-width: 80%;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* Для вертикального выравнивания текста: */
+    display: flex;
+    align-items: center;
     justify-content: center;
-    height: 36px;
-    font-size: 0.85rem;
-    box-shadow: inset 0 0 10px rgba(37, 99, 235, 0.25);
 }
 
 /* Кнопки и инпуты */
@@ -903,46 +916,16 @@ body.modal-open {
     }
 }
 
-.notification-inline:hover {
-    transform: translateX(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
+
 
 /* === Уведомления в центре хедера === */
 .mobile-header {
     position: relative; /* обязательно, чтобы позиционирование шло от хедера */
 }
 
-/* Контейнер уведомлений */
-#notificationContainer {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -55%); /* немного выше центра */
-    width: 100%;
-    height: 0;
-    pointer-events: none;
-    z-index: 99;
-    display: flex;
-    justify-content: center;
-}
 
-/* Уведомление */
-#notificationContainer .notification-inline {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(73, 37, 235, 0.2);
-    border: 1px solid rgba(59, 130, 246, 0.4);
-    color: #fff;
-    border-radius: 0.75rem;
-    padding: 0.4rem 1rem;
-    font-size: 0.85rem;
-    white-space: nowrap;
-    text-align: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    animation: fadeInOverlay 0.3s forwards;
-}
+
+
 
 /* Появление/исчезновение */
 @keyframes fadeInOverlay {
@@ -1098,3 +1081,34 @@ body.modal-open {
 #emptyNotesState {
     display: none; /* Сначала скрыто, покажется только если нет заметок */
 }
+
+
+
+
+/* --- FIX: фиксация уведомлений по центру хедера --- */
+.mobile-header {
+  /* оставляем sticky, важно чтобы элемент был позиционированным */
+  position: sticky; /* или keep what you have */
+  top: 0;
+  z-index: 120; /* чтобы header был над контентом */
+}
+
+/* контейнер уведомлений — обязательно абсолютный относительно .
+
+
+/* === Единый финальный фикс: уведомление по центру === */
+#notificationContainer {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    pointer-events: none !important;
+    z-index: 20 !important;
+}
+
+
+

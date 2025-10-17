@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-qtg_^8)f75b71hu$r$m%r!^ww^m8q&j&0xg0fd2yw8v3xo-3jk')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'django-wallet.onrender.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'django-wallet.onrender.com', 'coinza.app', 'www.coinza.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
