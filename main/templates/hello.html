@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Koinda - Простой кошелек для учета расходов</title>
+    <title>Coinza - Простой кошелек для учета расходов</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -115,7 +115,7 @@
                 <img src="{% static 'main/logo.svg' %}" alt="Somduk" class="h-16 md:h-20 transition-transform duration-300 hover:scale-105">
             </div>
             <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
-                Простой путь к финансовому порядку начинается с Koinda.
+                Финансовая ясность — теперь это просто, удобно и в твоём кармане.
               
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -127,58 +127,154 @@
                 
             </div>
             
-            <!-- Mockup устройства -->
-            <div class="max-w-md mx-auto float-animation">
-                <div class="bg-gray-800/50 rounded-3xl p-4 shadow-2xl backdrop-blur-sm border border-gray-700/30">
-                    <div class="bg-gray-900/80 rounded-2xl p-4 backdrop-blur-sm">
-                        <div class="flex justify-between items-center mb-4">
-                            <div class="text-left">
-                                <p class="text-gray-400 text-sm">Общий баланс</p>
-                                <p class="text-2xl font-bold">15,430 с</p>
-                            </div>
-                            <div class="flex bg-gray-800 rounded-lg p-1">
-                                <span class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm">KGS</span>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 mb-4">
-                            <div class="bg-gray-800/50 rounded-xl p-3 backdrop-blur-sm">
-                                <p class="text-gray-400 text-xs">Доходы</p>
-                                <p class="text-green-400 font-medium">+25,000 с</p>
-                            </div>
-                            <div class="bg-gray-800/50 rounded-xl p-3 backdrop-blur-sm">
-                                <p class="text-gray-400 text-xs">Расходы</p>
-                                <p class="text-red-400 font-medium">-9,570 с</p>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center bg-gray-800/50 rounded-lg p-3 backdrop-blur-sm">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 rounded-full bg-blue-400 mr-3"></div>
-                                    <div>
-                                        <p class="font-medium text-sm">Продукты</p>
-                                        <p class="text-gray-400 text-xs">Еда</p>
-                                    </div>
-                                </div>
-                                <p class="text-red-400 font-medium">-1,250 с</p>
-                            </div>
-                            
-                            <div class="flex justify-between items-center bg-gray-800/50 rounded-lg p-3 backdrop-blur-sm">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 rounded-full bg-green-400 mr-3"></div>
-                                    <div>
-                                        <p class="font-medium text-sm">Зарплата</p>
-                                        <p class="text-gray-400 text-xs">Доход</p>
-                                    </div>
-                                </div>
-                                <p class="text-green-400 font-medium">+25,000 с</p>
-                            </div>
-                        </div>
+       <!-- Mockup устройства в стиле Coinza -->
+<div class="max-w-sm mx-auto">
+    <div class="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-sm border border-gray-700/50 relative overflow-hidden">
+        <!-- Верхний бар -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+                <img src="{% static 'main/ico.svg' %}" alt="coinza" class="h-8 w-8">
+            </div>
+            <button class="w-8 h-8 bg-gray-800 hover:bg-gray-700 rounded-lg flex items-center justify-center transition-colors">
+                <i class="fas fa-ellipsis-v text-gray-300 text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Карточка баланса -->
+        <div class="relative bg-gradient-to-r from-blue-900/40 to-purple-900/40 rounded-2xl p-4 mb-6 border border-blue-800/30 overflow-hidden">
+            <!-- Фоновая иконка -->
+            <i class="fas fa-dollar-sign text-[80px] text-blue-800/20 absolute top-2 right-3"></i>
+            
+            <div class="relative z-10">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <p class="text-gray-300 text-sm mb-1">Текущий баланс</p>
+                        <p class="text-2xl font-bold text-white">15,430 с</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-300 text-sm mb-1">Резерв</p>
+                        <p class="text-blue-400 font-semibold">5,000 с</p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-between text-xs">
+                    <div>
+                        <p class="text-gray-400">Доходы</p>
+                        <p class="text-green-400 font-semibold">+25,000 с</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-400">Расходы</p>
+                        <p class="text-red-400 font-semibold">-9,570 с</p>
+                    </div>
+                </div>
+                
+                <!-- Прогресс-бар -->
+                <div class="w-full bg-gray-700/50 rounded-full h-1.5 mt-2 overflow-hidden">
+                    <div class="flex h-1.5 rounded-full">
+                        <div class="bg-green-500 h-1.5 rounded-l-full" style="width: 72%"></div>
+                        <div class="bg-red-500 h-1.5 rounded-r-full" style="width: 28%"></div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Вкладки категорий -->
+        <div class="flex gap-2 mb-6 justify-center">
+            <div class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium">
+                Все
+            </div>
+            <div class="bg-gray-700/60 text-gray-300 px-4 py-2 rounded-xl text-sm font-medium">
+                Еда
+            </div>
+            <div class="bg-gray-700/60 text-gray-300 px-4 py-2 rounded-xl text-sm font-medium">
+                Жильё
+            </div>
+            <div class="bg-gray-700/60 text-gray-300 px-4 py-2 rounded-xl text-sm font-medium">
+                Работа
+            </div>
+        </div>
+
+        <!-- История операций -->
+        <div class="space-y-3">
+            <div class="flex justify-between items-center p-3 bg-gray-800/40 rounded-xl border border-gray-700/30">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-utensils text-red-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-white text-sm">Продукты</p>
+                        <p class="text-gray-400 text-xs">Супермаркет</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-red-400 font-bold text-sm">-1,250 с</p>
+                    <p class="text-gray-400 text-xs">Сегодня</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-gray-800/40 rounded-xl border border-gray-700/30">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-money-bill-wave text-green-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-white text-sm">Зарплата</p>
+                        <p class="text-gray-400 text-xs">Работа</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-green-400 font-bold text-sm">+25,000 с</p>
+                    <p class="text-gray-400 text-xs">2 дня назад</p>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center p-3 bg-gray-800/40 rounded-xl border border-gray-700/30">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-gas-pump text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-white text-sm">Топливо</p>
+                        <p class="text-gray-400 text-xs">АЗС</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-red-400 font-bold text-sm">-2,800 с</p>
+                    <p class="text-gray-400 text-xs">3 дня назад</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Нижняя навигация -->
+        <div class="flex justify-between items-center mt-6 pt-4 border-t border-gray-700/50">
+            <div class="text-center">
+                <i class="fas fa-home text-blue-400 text-lg"></i>
+                <p class="text-blue-400 text-xs mt-1">Главная</p>
+            </div>
+            <div class="text-center">
+                <i class="fas fa-tags text-gray-400 text-lg"></i>
+                <p class="text-gray-400 text-xs mt-1">Категории</p>
+            </div>
+            <div class="text-center transform -translate-y-2">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                    <i class="fas fa-plus text-white text-lg"></i>
+                </div>
+            </div>
+            <div class="text-center">
+                <i class="fas fa-chart-pie text-gray-400 text-lg"></i>
+                <p class="text-gray-400 text-xs mt-1">Статистика</p>
+            </div>
+            <div class="text-center">
+                <i class="fas fa-sticky-note text-gray-400 text-lg"></i>
+                <p class="text-gray-400 text-xs mt-1">Заметки</p>
+            </div>
+        </div>
+
+        <!-- Декоративные элементы -->
+        <div class="absolute -top-10 -right-10 w-20 h-20 bg-blue-500/10 rounded-full blur-xl"></div>
+        <div class="absolute -bottom-10 -left-10 w-20 h-20 bg-purple-500/10 rounded-full blur-xl"></div>
+    </div>
+</div>
     </section>
 
 
@@ -192,7 +288,7 @@
                 </div>
                 <h2 class="text-3xl md:text-4xl font-bold mb-4">Открытый исходный код</h2>
                 <p class="text-xl text-gray-300 mb-8 leading-relaxed">
-                    Koinda - это проект с открытым исходным кодом. Мы верим в прозрачность и сообщество. 
+                    Coinza - это проект с открытым исходным кодом. Мы верим в прозрачность и сообщество. 
                     Любой может посмотреть код, предложить улучшения или создать свою версию.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
@@ -214,7 +310,7 @@
         <div class="container mx-auto px-4 text-center">
             <h2 class="text-3xl md:text-4xl font-bold mb-6">Готовы взять финансы под контроль?</h2>
             <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto leading-relaxed">
-                Присоединяйтесь к тысячам пользователей, которые уже управляют своими финансами с Koinda - это бесплатно!
+                Присоединяйтесь к тысячам пользователей, которые уже управляют своими финансами с Coinza - это бесплатно!
             </p>
             <a href="/" class="btn-primary text-white px-8 py-4 rounded-xl font-bold text-lg inline-flex items-center justify-center mx-auto mb-3">
                 <i class="fas fa-rocket mr-3"></i>
@@ -231,7 +327,7 @@
             <div class="flex flex-col md:flex-row justify-between items-center mb-8">
                 <div class="mb-6 md:mb-0">
                     <div class="flex justify-center items-center mb-3">
-                        <img src="{% static 'main/logo.svg' %}" alt="Somduk" class="h-8 md:h-10">
+                        <img src="{% static 'main/ico.svg' %}" alt="Somduk" class="h-8 md:h-10">
                     </div>
                     <p class="text-gray-400 text-sm">Простой кошелек для сложных финансов</p>
                 </div>
