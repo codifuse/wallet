@@ -401,29 +401,31 @@ window.addTransactionToList = function(transaction, animate = true, append = fal
         `;
     }
 
-    const html = `
-        <div class="transaction-item bg-gray-800 rounded-lg p-3 flex justify-between items-center ${animate ? 'animate-fadeIn' : ''}"
-             data-category-id="${transaction.category_id || transaction.categoryId || 'unknown'}"
-             data-transaction-id="${transaction.id || ''}">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center" 
-                     style="background-color: ${transaction.category_color || '#999'}22; color: ${transaction.category_color || '#999'}">
-                    <i class="${transaction.category_icon || 'fas fa-circle'}"></i>
-                </div>
-                <div>
-                    <p class="font-medium">${transaction.category_name || transaction.category || 'Прочее'}</p>
-                    ${transaction.description ? `<p class="text-xs text-gray-400 line-clamp-1 [max-width:20ch]">${transaction.description}</p>` : ''}
-                </div>
+   const html = `
+    <div class="transaction-item flex justify-between items-center p-3 bg-gray-800/40 rounded-xl border border-gray-700/30 ${animate ? 'animate-fadeIn' : ''}"
+         data-category-id="${transaction.category_id || transaction.categoryId || 'unknown'}"
+         data-transaction-id="${transaction.id || ''}">
+        <div class="flex items-center">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center mr-3" 
+                 style="background-color: ${transaction.category_color || '#999'}22; color: ${transaction.category_color || '#999'}">
+                <i class="${transaction.category_icon || 'fas fa-circle'} text-sm"></i>
             </div>
-            <div class="flex items-center space-x-3">
-                ${amountDisplay}
-                <button class="delete-transaction-btn text-red-400 hover:text-red-300 p-2 transition-colors" 
-                        data-transaction-id="${transaction.id || ''}" title="Удалить транзакцию">
-                    <i class="fas fa-trash text-sm"></i>
-                </button>
+            <div>
+                <p class="font-medium text-white text-sm">${transaction.category_name || transaction.category || 'Прочее'}</p>
+                ${transaction.description ? `<p class="text-gray-400 text-xs">${transaction.description}</p>` : ''}
             </div>
         </div>
-    `;
+        <div class="flex items-center space-x-2">
+            <div class="text-right">
+                ${amountDisplay}
+            </div>
+            <button class="delete-transaction-btn text-red-400 hover:text-red-300 p-1 transition-colors" 
+                    data-transaction-id="${transaction.id || ''}" title="Удалить транзакцию">
+                <i class="fas fa-trash text-xs"></i>
+            </button>
+        </div>
+    </div>
+`;
 
     // ИЗМЕНЕНИЕ: Добавляем транзакцию в начало или конец в зависимости от параметра append
     if (append) {

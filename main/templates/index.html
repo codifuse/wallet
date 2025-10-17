@@ -44,10 +44,10 @@
     <div class="app-container">
        <!-- Верхний бар с логотипом, уведомлением и меню -->
 <!-- Хедер -->
-<div class="mobile-header bg-gray-900 px-4 h-14 flex items-center justify-between">
+<div class="mobile-header  px-4 h-14 flex items-center justify-between">
   <div class="flex items-center h-full">
     <img id="logo2" src="{% static 'main/ico.svg' %}" alt="coinza" class="h-7">
-    <span class="ml-1 text-[10px] text-gray-400 font-medium leading-none">v1.27</span>
+  
   </div>
   
   <!-- Контейнер уведомлений ВНУТРИ хедера -->
@@ -117,7 +117,7 @@
     </div>
 </div>
                     <!-- Вкладки категорий -->
-                    <div class="card-gradient rounded-2xl p-1 mb-4">
+                    <div class="card-gradient rounded-2xl  mb-4">
                         <div class="tabs-container" id="tabsContainer">
                             <div class="tabs-wrapper" id="tabsWrapper">
                                 <!-- Вкладка "Все" -->
@@ -135,12 +135,12 @@
                     </div>
                     
 <!-- История операций -->
-<div class="card-gradient rounded-2xl p-4">
+<div class="card-gradient rounded-2xl ">
     <div class="flex justify-between items-center mb-3">
         <h2 class="text-lg font-bold">История операций</h2>
         <!-- Кнопка фильтра -->
         <div class="relative">
-            <button id="filterToggleBtn" class="bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm flex items-center space-x-2 transition-colors">
+            <button id="filterToggleBtn" class="bg-gray-800 hover:bg-gray-600 px-3 py-2 rounded-lg text-sm flex items-center space-x-2 transition-colors">
                 <span id="currentFilterText">За неделю</span>
                 <i class="fas fa-chevron-down text-xs"></i>
             </button>
@@ -188,7 +188,7 @@
         <!-- Категории вкладка -->
         <div class="mobile-tab mt-5" id="tab-categories">
             <div class="mobile-section">
-                <div class="card-gradient rounded-2xl p-4">
+                <div class="card-gradient rounded-2xl ">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-lg font-bold mb-4 flex items-center">
                     <i class="fa-solid fa-icons text-blue-400 mr-2"></i>
@@ -217,7 +217,7 @@
 
 
      <!-- Обновленный блок "Резерв и сбережения" с новым дизайном -->
-<div class="card-gradient rounded-2xl p-4 mb-4">
+<div class="card-gradient rounded-2xl  mb-4">
     <h2 class="text-lg font-bold mb-4 flex items-center">
         <i class="fas fa-piggy-bank text-blue-400 mr-2"></i>
         Резерв и сбережения
@@ -536,7 +536,7 @@
 <div class="mobile-tab" id="tab-notes">
     <div class="mobile-section">
       <div class="mobile-content">
-        <div class="card-gradient rounded-2xl p-4">
+        <div class="card-gradient rounded-2xl">
             <div class="flex justify-between items-center mb-4">
                  <h2 class="text-lg font-bold mb-4 flex items-center">
                     <i class="fa-solid fa-feather-pointed text-blue-400 mr-2"></i>
@@ -659,8 +659,7 @@
     </div>
 </div>
 
-        <!-- Скрытый input для импорта -->
-        <input type="file" id="importInput" accept=".json" class="hidden">
+    
   
     </div> <!-- Конец .app-container -->
 

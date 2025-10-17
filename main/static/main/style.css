@@ -32,11 +32,10 @@ body.modal-open {
     left: 0;
     right: 0;
     z-index: 100;
-    background: rgba(15, 23, 42, 0.8);
+
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     padding: 0.5rem 1rem;
-    border-bottom: 1px solid rgba(71, 85, 105, 0.5);
     height: 60px;
     box-sizing: border-box;
     flex-shrink: 0;
@@ -81,8 +80,8 @@ body.modal-open {
     padding: 0.5rem 0.75rem;
     align-items: center;
     height: 70px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
 
 .mobile-nav-item {
     flex: 1;
@@ -153,9 +152,7 @@ body.modal-open {
 }
 
 .card-gradient {
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    border: 1px solid #475569;
-    border-radius: 1rem;
+
     margin-bottom: 1rem;
 }
 
@@ -191,7 +188,7 @@ body.modal-open {
 .tab {
     padding: 8px 16px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(146, 130, 130, 0.1);
     color: white;
     cursor: pointer;
     white-space: nowrap;
@@ -200,8 +197,8 @@ body.modal-open {
 }
 
 .tab.active {
-    background: #3b82f6;
-    border-color: #3b82f6;
+    background: #174591;
+    border-color: #285399;
 }
 
 .tab:hover:not(.active) {
