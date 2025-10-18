@@ -1103,44 +1103,51 @@ body.modal-open {
 
 
 
-/* === iPhone safe-area fix (вырезы + home indicator) === */
+/* === FIX: корректный хедер для iPhone с вырезом === */
+
+/* Фон заливает всю область, включая вырез */
 html, body {
   background-color: #0f172a;
-  padding-top: env(safe-area-inset-top);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-  padding-bottom: env(safe-area-inset-bottom);
+  margin: 0;
+  padding: 0;
 }
 
-/* Хедер: фон растягивается под вырез, контент остаётся на месте */
+/* Хедер */
 .mobile-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
   position: sticky;
   top: 0;
   left: 0;
   right: 0;
   z-index: 120;
-  height: calc(60px + env(safe-area-inset-top)); /* высота увеличивается */
   display: flex;
-  align-items: flex-end; /* контент остаётся внизу */
-  padding-top: env(safe-area-inset-top);
+  align-items: center;
+  justify-content: space-between;
+
+  /* Основной фон */
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  /* Фикс Safe Area */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
   padding-bottom: 0.5rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
+
+  height: calc(60px + env(safe-area-inset-top, 0)); /* хедер увеличен вверх */
   box-sizing: border-box;
 }
 
-/* Лого, кнопки и прочие элементы хедера */
+/* Контент внутри хедера остаётся как был */
 .mobile-header .flex.justify-between.items-center {
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* Нижняя навигация: добавляем отступ под home-индикатор */
-.mobile-nav {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 0.25rem) !important;
-  height: calc(70px + env(safe-area-inset-bottom)); /* чтобы не "сплющивалась" */
+/* Чтобы логотип и кнопка не прилипали к вырезу */
+.mobile-header > * {
+  margin-top: auto;
 }
 
 
