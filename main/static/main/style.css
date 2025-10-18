@@ -74,13 +74,20 @@ body.modal-open {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, #0e1116 0%, #041630 100%);
-    border-top: 1px solid #475569;
-    z-index: 40;
-    padding: 0.5rem 0.75rem;
+    z-index: 100;
+    display: flex;
     align-items: center;
+    justify-content: space-around;
     height: 70px;
+    padding: 0.5rem 0.75rem;
+    
+    /* Новый “стеклянный” стиль */
+    background: transparent !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
+
 
 
 .mobile-nav-item {
@@ -1126,6 +1133,8 @@ body.modal-open {
   box-sizing: border-box !important;
 }
 
+
+
 /* Только для iPhone / Safari (устройства с вырезом) */ @supports (padding: max(env(safe-area-inset-top), 0px)) { .mobile-header { align-items: flex-end !important; height: calc(60px + env(safe-area-inset-top)) !important; padding-top: env(safe-area-inset-top) !important; padding-bottom: 0.6rem !important; } }
 
 /* === Корректировка только для Android / Desktop === */
@@ -1152,9 +1161,10 @@ body.modal-open {
     padding-top: calc(env(safe-area-inset-top) + 0.4rem) !important;
     padding-bottom: 0.6rem !important;
 
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
+  background: transparent !important;
+backdrop-filter: blur(20px) !important;
+-webkit-backdrop-filter: blur(20px) !important;
+
   }
 }
 
