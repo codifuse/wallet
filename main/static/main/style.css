@@ -6,10 +6,10 @@ body {
     font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) fixed;
+    min-height: 100vh;
     overflow-x: hidden;
 }
-
 /* Когда модалка открыта — блокируем скролл фона */
 body.modal-open {
     overflow: hidden;
@@ -19,10 +19,11 @@ body.modal-open {
 
 /* Основной контейнер */
 .app-container {
-    height: 100vh;
+    min-height: 100vh; /* замени height на min-height */
     display: flex;
     flex-direction: column;
 }
+
 
 
 /* Хедер */
@@ -49,10 +50,9 @@ body.modal-open {
 
 /* Основной контент */
 .mobile-content {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 20px 0.25rem 90px !important; /* Увеличиваем отступ для футера */
+    background: transparent !important;
+    overflow-y: visible; /* чтобы фон не обрезался */
+    padding: 20px 0.25rem 90px !important;
 }
 
 .mobile-section {
@@ -74,7 +74,7 @@ body.modal-open {
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    background: linear-gradient(135deg, #0e1116 0%, #041630 100%);
     border-top: 1px solid #475569;
     z-index: 40;
     padding: 0.5rem 0.75rem;
@@ -152,7 +152,7 @@ body.modal-open {
 }
 
 .card-gradient {
-
+    background: transparent !important;
     margin-bottom: 1rem;
 }
 
@@ -161,10 +161,13 @@ body.modal-open {
     overflow-x: auto;
     scrollbar-width: thin;
     scrollbar-color: #4b5563 #1f2937;
+        scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE и Edge */
 }
 
 .tabs-container::-webkit-scrollbar {
     height: 6px;
+        display: none; /* Chrome, Safari */
 }
 
 .tabs-container::-webkit-scrollbar-track {

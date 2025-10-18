@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from main import views
 
 urlpatterns = [
@@ -43,5 +43,8 @@ urlpatterns = [
     path('update_target_reserve/', views.update_target_reserve, name='update_target_reserve'),
     path('update_reserve_percentage/', views.update_reserve_percentage, name='update_reserve_percentage'),
     path('update_target_reserve/', views.update_target_reserve, name='update_target_reserve'),
-    
+    path('webpush/', include('webpush.urls')),
+    path('send_note_reminder/', views.send_note_reminder, name='send_note_reminder'),
+    path('get_pending_reminders/', views.get_pending_reminders, name='get_pending_reminders'),
+
 ]

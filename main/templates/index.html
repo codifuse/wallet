@@ -49,7 +49,7 @@
     <img id="logo2" src="{% static 'main/ico.svg' %}" alt="coinza" class="h-7">
   
   </div>
-  
+
   <!-- Контейнер уведомлений ВНУТРИ хедера -->
   <div id="notificationContainer"></div>
   
@@ -220,7 +220,7 @@
 <div class="card-gradient rounded-2xl  mb-4">
     <h2 class="text-lg font-bold mb-4 flex items-center">
         <i class="fas fa-piggy-bank text-blue-400 mr-2"></i>
-        Резерв и сбережения
+        Мои сбережения
     </h2>
     
     <!-- Уведомление о выключенном резерве -->
@@ -1059,6 +1059,64 @@
             </div>
         </div>
     </div>
+
+
+<script>
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register("{% static 'service-worker.js' %}")
+    .then(() => {
+      console.log("✅ SW зарегистрирован");
+
+      // Ждём пока он станет активным
+      return navigator.serviceWorker.ready;
+    })
+    .then(async (reg) => {
+      console.log("💪 SW готов, создаём подписку...");
+
+      const appServerKey = urlBase64ToUint8Array("{{ vapid_key|safe }}");
+
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: appServerKey
+      });
+
+      console.log("📡 Подписка создана:", subscription);
+
+     await fetch("/webpush/save_information/?group=all", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-CSRFToken": "{{ csrf_token }}"
+  },
+  body: JSON.stringify(subscription)
+});
+
+
+      console.log("✅ Подписка сохранена на сервере.");
+    })
+    .catch(err => console.error("❌ Ошибка подписки:", err));
+}
+
+</script>
+
+
+
+
+
 
 <!-- index.html - обновляем блок с балансом -->
 <script>

@@ -1,7 +1,10 @@
+import json 
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from .models import Category, Transaction
 from decimal import Decimal, InvalidOperation
 from django.db.models import Sum
@@ -12,11 +15,63 @@ from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.models import User 
 from django.core.paginator import Paginator
+from django.conf import settings
 
 from django.db.models import Sum, Count, Q
-
+from webpush import send_user_notification
+from webpush import send_group_notification
 from .models import Note
 from django.utils import timezone
+
+def home(request):
+    vapid_key = settings.WEBPUSH_SETTINGS.get("VAPID_PUBLIC_KEY")
+    return render(request, "main/index.html", {"vapid_key": vapid_key})
+
+@require_POST
+def send_note_reminder(request):
+    """Отправка push-уведомления для напоминания заметки"""
+    try:
+        data = json.loads(request.body)
+        note_id = data.get('note_id')
+        title = data.get('title', 'Напоминание')
+        content = data.get('content', '')
+        
+        # Формируем payload для push-уведомления
+        payload = {
+            'head': title,
+            'body': content[:100] + '...' if len(content) > 100 else content,
+            'url': '/',  # URL для открытия приложения
+            'icon': '/static/main/icons/icon-192x192.png',
+            'type': 'note_reminder',  # Важно: тип уведомления
+            'noteId': note_id
+        }
+        
+        # Отправляем уведомление группе 'all'
+        send_group_notification(
+            group_name='all',
+            payload=payload,
+            ttl=1000
+        )
+        
+        return JsonResponse({'success': True, 'message': 'Уведомление отправлено'})
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+    
+
+
+
+def send_test_push(request):
+    payload = {
+        "head": "🚀 Тестовое уведомление",
+        "body": "Если ты видишь это — push работает!",
+        "icon": "/static/main/icons/icon-192x192.png",
+        "url": "/"
+    }
+    send_user_notification(user=request.user, payload=payload, ttl=1000)
+    return JsonResponse({"status": "sent"})
+
+
 
 
 def create_default_categories(user):
@@ -816,25 +871,32 @@ def mark_note_as_reminded(request, note_id):
     except Note.DoesNotExist:
         return JsonResponse({"success": False, "error": "Заметка не найдена"})
 
-@login_required
 def get_pending_reminders(request):
-    # Получаем заметки, у которых reminder_date наступил и is_reminded=False
-    from django.utils import timezone
-    now = timezone.now()
-    reminders = Note.objects.filter(
-        user=request.user,
-        reminder_date__lte=now,
-        is_reminded=False
-    ).order_by('reminder_date')
-    
-    reminders_data = []
-    for note in reminders:
-        reminders_data.append({
-            'id': note.id,
-            'title': note.title,
-            'content': note.content,
-            'reminder_date': note.reminder_date.isoformat() if note.reminder_date else None,
+    """Получение ожидающих напоминаний"""
+    try:
+        now = timezone.now()
+        reminders = Note.objects.filter(
+            reminder_date__lte=now,
+            is_reminded=False
+        ).select_related('user')
+        
+        reminders_data = []
+        for reminder in reminders:
+            reminders_data.append({
+                'id': reminder.id,
+                'title': reminder.title,
+                'content': reminder.content,
+                'reminder_date': reminder.reminder_date.isoformat(),
+                'created_at': reminder.created_at.isoformat()
+            })
+            
+        return JsonResponse({
+            'success': True,
+            'reminders': reminders_data
         })
-    
-    return JsonResponse({"reminders": reminders_data})
-
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
