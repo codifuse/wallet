@@ -1122,17 +1122,21 @@ body.modal-open {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 
-  height: 45px; /* стандартная высота для Android */
+  height: 65px; /* стандартная высота для Android */
   padding: 0.75rem 1rem;
   box-sizing: border-box;
 }
 
 /* --- Только для iPhone и Safari (устройства с вырезом) --- */
-@supports (padding: max(env(safe-area-inset-top), 0px)) {
+
+
+/* === Принудительное выравнивание хедера для Android === */
+@supports not (padding: max(env(safe-area-inset-top), 0px)) {
   .mobile-header {
-    align-items: flex-end;
-    height: calc(150px + env(safe-area-inset-top)); /* увеличиваем вверх */
-    padding-top: calc(env(safe-area-inset-top) + 0.50rem); /* чуть больше воздуха сверху */
-    padding-bottom: 1.75rem; /* и снизу */
+    align-items: flex-end !important;
+    height: 70px !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.75rem !important;
+    box-sizing: border-box !important;
   }
 }
