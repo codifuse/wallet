@@ -1101,49 +1101,47 @@ body.modal-open {
     z-index: 20 !important;
 }
 
-
-/* === Финальный стабильный FIX для хедера (iPhone + Android) === */
+/* === Суперфикс для Android и iPhone === */
 .mobile-header {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 120;
+  position: sticky !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 120 !important;
 
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
 
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
 
   /* Базовые параметры (Android / Desktop) */
-  height: 65px;
-  padding: 0.75rem 1rem;
-  box-sizing: border-box;
+  height: 60px !important;
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.4rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  box-sizing: border-box !important;
 }
 
-/* Только для iPhone / Safari (устройства с вырезом) */
+/* iPhone с вырезом */
 @supports (padding: max(env(safe-area-inset-top), 0px)) {
   .mobile-header {
     align-items: flex-end !important;
-    height: calc(60px + env(safe-area-inset-top)) !important;
+    height: calc(56px + env(safe-area-inset-top)) !important;
     padding-top: env(safe-area-inset-top) !important;
     padding-bottom: 0.6rem !important;
   }
 }
 
 
-
-/* === Принудительное выравнивание хедера для Android === */
-@supports not (padding: max(env(safe-area-inset-top), 0px)) {
+/* === Корректировка только для Android / Desktop === */
+@media (max-width: 1024px) {
   .mobile-header {
-    align-items: flex-end !important;
-    height: 70px !important;
-    padding-top: 0.5rem !important;
-    padding-bottom: 0.75rem !important;
-    box-sizing: border-box !important;
+    padding-top: 0.8rem !important; /* было 0.4rem — добавляем воздуха сверху */
+    height: 54px !important;        /* делаем чуть выше, чтобы всё уместилось */
+    align-items: center !important; /* контент по центру по вертикали */
   }
 }
-
