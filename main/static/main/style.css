@@ -1126,16 +1126,7 @@ body.modal-open {
   box-sizing: border-box !important;
 }
 
-/* iPhone с вырезом */
-@supports (padding: max(env(safe-area-inset-top), 0px)) {
-  .mobile-header {
-    align-items: flex-end !important;
-    height: calc(56px + env(safe-area-inset-top)) !important;
-    padding-top: env(safe-area-inset-top) !important;
-    padding-bottom: 0.6rem !important;
-  }
-}
-
+/* Только для iPhone / Safari (устройства с вырезом) */ @supports (padding: max(env(safe-area-inset-top), 0px)) { .mobile-header { align-items: flex-end !important; height: calc(60px + env(safe-area-inset-top)) !important; padding-top: env(safe-area-inset-top) !important; padding-bottom: 0.6rem !important; } }
 
 /* === Корректировка только для Android / Desktop === */
 @media (max-width: 1024px) {
