@@ -1163,6 +1163,6 @@ body.modal-open {
 /* Только для iPhone / Safari */
 @supports (padding: max(env(safe-area-inset-top), 0px)) {
   #notificationContainer {
-    top: calc(env(safe-area-inset-top) + 3px) !important; /* 70px = твоя высота хедера */
+    top: calc(env(safe-area-inset-top) + 2px) !important; /* 70px = твоя высота хедера */
   }
 }
