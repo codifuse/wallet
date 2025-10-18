@@ -1167,3 +1167,11 @@ body.modal-open {
     box-sizing: border-box !important;
   }
 }
+
+
+/* Только для iPhone / Safari */
+@supports (padding: max(env(safe-area-inset-top), 0px)) {
+  #notificationContainer {
+    top: calc(env(safe-area-inset-top) + 70px) !important; /* 70px = твоя высота хедера */
+  }
+}
