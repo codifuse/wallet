@@ -1159,19 +1159,10 @@ body.modal-open {
 }
 
 
-/* === Футер / нижняя навигация: safe area для iPhone === */
-@supports (padding: max(env(safe-area-inset-bottom), 0px)) {
-  .mobile-nav {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 0.6rem) !important;
-    height: calc(60px + env(safe-area-inset-bottom)) !important;
-    box-sizing: border-box !important;
-  }
-}
-
 
 /* Только для iPhone / Safari */
 @supports (padding: max(env(safe-area-inset-top), 0px)) {
   #notificationContainer {
-    top: calc(env(safe-area-inset-top) + 5px) !important; /* 70px = твоя высота хедера */
+    top: calc(env(safe-area-inset-top) + 3px) !important; /* 70px = твоя высота хедера */
   }
 }
