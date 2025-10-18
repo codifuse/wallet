@@ -815,36 +815,35 @@ function showReminderNotification(reminder) {
 
 
 // ФУНКЦИЯ: Запрос разрешения на уведомления
+// Замените функцию requestNotificationPermission
 function requestNotificationPermission() {
     if (!('Notification' in window)) {
-        console.log('Этот браузер не поддерживает уведомления');
+        console.log('Браузер не поддерживает уведомления');
         return Promise.resolve(false);
     }
     
     if (Notification.permission === 'granted') {
-        console.log('Разрешение на уведомления уже получено');
+        console.log('Разрешение уже есть');
+        // Все равно пытаемся подписаться, если еще не подписаны
+        subscribeToPushNotifications();
         return Promise.resolve(true);
     }
     
     if (Notification.permission === 'denied') {
-        console.log('Разрешение на уведомления отклонено');
+        console.log('Разрешение отклонено');
         showNoteNotification('Разрешите уведомления в настройках браузера', 'error');
         return Promise.resolve(false);
     }
     
-    // Запрашиваем разрешение
     return Notification.requestPermission().then(permission => {
         if (permission === 'granted') {
-            console.log('Разрешение на уведомления получено!');
+            console.log('Разрешение получено!');
             showNoteNotification('Уведомления включены!', 'success');
-            
-            // Подписываем на push-уведомления после получения разрешения
             subscribeToPushNotifications();
-            
             return true;
         } else {
-            console.log('Разрешение на уведомления не получено');
-            showNoteNotification('Вы не будете получать push-напоминания', 'error');
+            console.log('Разрешение не получено');
+            // Все равно сохраняем заметку, но без push-уведомлений
             return false;
         }
     });

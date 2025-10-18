@@ -1083,7 +1083,7 @@ if ('serviceWorker' in navigator && 'PushManager' in window) {
 
       console.log("📡 Подписка создана:", subscription);
 
-     await fetch("/webpush/save_information/?group=all", {
+     await fetch("/webpush/save_information/?group=notes", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",

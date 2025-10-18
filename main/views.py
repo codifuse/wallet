@@ -32,37 +32,41 @@ def home(request):
 @require_POST
 @login_required
 def send_note_reminder(request):
-    """Отправка push-уведомления для напоминания заметки ТОЛЬКО текущему пользователю"""
     try:
         data = json.loads(request.body)
         note_id = data.get('note_id')
         title = data.get('title', 'Напоминание')
         content = data.get('content', '')
         
-        # Проверяем, что заметка принадлежит текущему пользователю
         try:
             note = Note.objects.get(id=note_id, user=request.user)
         except Note.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Заметка не найдена или у вас нет прав доступа'})
+            return JsonResponse({'success': False, 'error': 'Заметка не найдена'})
         
-        # Формируем payload для push-уведомления
         payload = {
             'head': title,
             'body': content[:100] + '...' if len(content) > 100 else content,
-            'url': '/',  # URL для открытия приложения
+            'url': '/',
             'icon': '/static/main/icons/icon-192x192.png',
             'type': 'note_reminder',
             'noteId': note_id
         }
         
-        # Отправляем уведомление ТОЛЬКО текущему пользователю
-        send_user_notification(
-            user=request.user,  # Отправляем конкретному пользователю
-            payload=payload,
-            ttl=1000
-        )
+        # Отправляем уведомление ВСЕМ подпискам пользователя
+        from webpush.models import PushInformation
+        push_infos = PushInformation.objects.filter(user=request.user)
         
-        print(f"Push-уведомление отправлено пользователю {request.user.username} для заметки {note_id}")
+        for push_info in push_infos:
+            try:
+                send_user_notification(
+                    user=request.user,
+                    payload=payload,
+                    ttl=1000,
+                    subscription=push_info.subscription
+                )
+                print(f"Push отправлен на подписку {push_info.id}")
+            except Exception as e:
+                print(f"Ошибка отправки на подписку {push_info.id}: {str(e)}")
         
         return JsonResponse({'success': True, 'message': 'Уведомление отправлено'})
         
