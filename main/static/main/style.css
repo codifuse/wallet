@@ -1125,8 +1125,8 @@ body.modal-open {
   padding-right: env(safe-area-inset-right, 0);
 
   /* Нормальная рабочая высота + немного воздуха снизу */
-  height: calc(70px + env(safe-area-inset-top, 0));
-  padding-bottom: 0.75rem;
+  height: calc(100px + env(safe-area-inset-top, 0));
+  padding-bottom: 1.25rem;
 
   box-sizing: border-box;
 }
