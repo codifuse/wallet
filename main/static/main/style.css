@@ -1103,51 +1103,39 @@ body.modal-open {
 
 
 
-/* === FIX: корректный хедер для iPhone с вырезом === */
-
-/* Фон заливает всю область, включая вырез */
-html, body {
-  background-color: #0f172a;
-  margin: 0;
-  padding: 0;
-}
-
-/* Хедер */
+/* === Финальный фикс высоты и отступов хедера === */
 .mobile-header {
   position: sticky;
   top: 0;
   left: 0;
   right: 0;
   z-index: 120;
+
   display: flex;
-  align-items: center;
+  align-items: flex-end; /* контент прижат к низу хедера */
   justify-content: space-between;
 
-  /* Основной фон */
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 
-  /* Фикс Safe Area */
+  /* Добавляем безопасные зоны */
   padding-top: env(safe-area-inset-top, 0);
   padding-left: env(safe-area-inset-left, 0);
   padding-right: env(safe-area-inset-right, 0);
-  padding-bottom: 0.5rem;
 
-  height: calc(80px + env(safe-area-inset-top, 0)); /* хедер увеличен вверх */
+  /* Нормальная рабочая высота + немного воздуха снизу */
+  height: calc(70px + env(safe-area-inset-top, 0));
+  padding-bottom: 0.75rem;
+
   box-sizing: border-box;
 }
 
-/* Контент внутри хедера остаётся как был */
+/* Контейнер с лого и кнопками */
 .mobile-header .flex.justify-between.items-center {
   width: 100%;
   margin: 0 !important;
   padding: 0 !important;
-}
-
-/* Чтобы логотип и кнопка не прилипали к вырезу */
-.mobile-header > * {
-  margin-top: auto;
 }
 
 
