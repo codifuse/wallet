@@ -1122,7 +1122,7 @@ body.modal-open {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 
-  height: 65px; /* стандартная высота для Android */
+  height: 45px; /* стандартная высота для Android */
   padding: 0.75rem 1rem;
   box-sizing: border-box;
 }
@@ -1131,8 +1131,8 @@ body.modal-open {
 @supports (padding: max(env(safe-area-inset-top), 0px)) {
   .mobile-header {
     align-items: flex-end;
-    height: calc(60px + env(safe-area-inset-top)); /* увеличиваем вверх */
-    padding-top: calc(env(safe-area-inset-top) + 0.25rem); /* чуть больше воздуха сверху */
-    padding-bottom: 0.75rem; /* и снизу */
+    height: calc(150px + env(safe-area-inset-top)); /* увеличиваем вверх */
+    padding-top: calc(env(safe-area-inset-top) + 0.50rem); /* чуть больше воздуха сверху */
+    padding-bottom: 1.75rem; /* и снизу */
   }
 }
