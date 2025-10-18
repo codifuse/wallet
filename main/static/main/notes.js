@@ -501,91 +501,133 @@ function initViewNoteModal() {
     });
 }
 
+
+
 function openViewNoteModal(note, isFromReminder = false) {
+    const modal = document.getElementById('viewNoteModal');
     document.getElementById('viewNoteTitle').textContent = note.title;
     document.getElementById('viewNoteContent').textContent = note.content || '';
-    document.getElementById('viewNoteModal').dataset.noteId = note.id;
+    modal.dataset.noteId = note.id;
 
     const createdDate = new Date(note.created_at);
+    const reminderDate = note.reminder_date ? new Date(note.reminder_date) : null;
     
-    // Добавляем дату создания в модалку
-    let viewNoteInfo = document.getElementById('viewNoteInfo');
-    if (!viewNoteInfo) {
-        const titleElement = document.getElementById('viewNoteTitle');
-        viewNoteInfo = document.createElement('div');
-        viewNoteInfo.id = 'viewNoteInfo';
-        viewNoteInfo.className = 'flex items-center text-sm text-gray-400 mb-4';
-        viewNoteInfo.innerHTML = `
-            <i class="fas fa-calendar-plus mr-2"></i>
-            <span>Создано: ${createdDate.toLocaleString('ru-RU')}</span>
-        `;
-        titleElement.parentNode.insertBefore(viewNoteInfo, titleElement.nextSibling);
-    } else {
-        viewNoteInfo.innerHTML = `
-            <i class="fas fa-calendar-plus mr-2"></i>
-            <span>Создано: ${createdDate.toLocaleString('ru-RU')}</span>
-        `;
-    }
+    // Обновляем информацию о датах
+    const viewNoteInfo = document.getElementById('viewNoteInfo');
+    viewNoteInfo.innerHTML = `
+        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+            <i class="fas fa-calendar-alt mr-2"></i>
+            <span>Создано: ${createdDate.toLocaleDateString('ru-RU')}</span>
+        </div>
+        ${reminderDate ? `
+            <div class="flex items-center text-sm ${note.is_reminded ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'} bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                <i class="fas fa-bell mr-2 ${!note.is_reminded ? 'animate-pulse' : ''}"></i>
+                <span>${reminderDate.toLocaleString('ru-RU')}</span>
+            </div>
+        ` : ''}
+    `;
 
-    // Настройка отображения информации о напоминании
+    // Настройка отображения блока напоминания
     const reminderInfo = document.getElementById('viewNoteReminderInfo');
-    const reminderDateElement = document.getElementById('viewNoteReminderDate');
-
-    if (note.reminder_date && !note.is_reminded) {
-        const reminderDate = new Date(note.reminder_date);
-        reminderDateElement.textContent = `Напоминание: ${reminderDate.toLocaleString('ru-RU')}`;
+    if (isFromReminder) {
         reminderInfo.classList.remove('hidden');
+        reminderInfo.innerHTML = `
+            <div class="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                <i class="fas fa-bell animate-pulse text-blue-500 mr-3"></i>
+                <span class="text-blue-700 dark:text-blue-300 font-medium">Напоминание</span>
+            </div>
+        `;
     } else {
         reminderInfo.classList.add('hidden');
     }
 
-    // УПРАВЛЕНИЕ КНОПКАМИ В ЗАВИСИМОСТИ ОТ РЕЖИМА
-    const editNoteBtn = document.getElementById('editNoteBtn');
-    const deleteNoteBtn = document.getElementById('deleteNoteBtn');
-    const hideReminderBtn = document.getElementById('hideReminderBtn');
-    const actionButtonsContainer = editNoteBtn.parentNode;
+    // УПРАВЛЕНИЕ КНОПКАМИ
+    const actionButtonsContainer = document.querySelector('#viewNoteModal .modal-actions');
+    actionButtonsContainer.innerHTML = ''; // Очищаем контейнер
 
     if (isFromReminder) {
-        // РЕЖИМ НАПОМИНАНИЯ - скрываем все кнопки действий
-        editNoteBtn.classList.add('hidden');
-        deleteNoteBtn.classList.add('hidden');
-        hideReminderBtn.classList.add('hidden');
+        // РЕЖИМ НАПОМИНАНИЯ - только одна кнопка закрытия
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors duration-200';
+        closeBtn.textContent = 'Закрыть';
+        closeBtn.addEventListener('click', () => {
+            animateModal(modal, false);
+        });
         
-        // Создаем или показываем только кнопку закрытия
-        let closeBtn = document.getElementById('closeNoteBtn');
-        if (!closeBtn) {
-            closeBtn = document.createElement('button');
-            closeBtn.id = 'closeNoteBtn';
-            closeBtn.className = 'btn-primary w-full mt-4';
-            closeBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Закрыть';
-            closeBtn.addEventListener('click', () => {
-                document.getElementById('viewNoteModal').classList.add('hidden');
-            });
-            actionButtonsContainer.appendChild(closeBtn);
-        } else {
-            closeBtn.classList.remove('hidden');
-        }
+        actionButtonsContainer.appendChild(closeBtn);
+        
     } else {
-        // ОБЫЧНЫЙ РЕЖИМ - показываем все кнопки действий
-        editNoteBtn.classList.remove('hidden');
-        deleteNoteBtn.classList.remove('hidden');
+        // ОБЫЧНЫЙ РЕЖИМ - кнопки в один ряд: Закрыть | Редактировать
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'flex gap-3';
         
-        // Управляем видимостью кнопки скрытия напоминания
-        if (note.reminder_date && !note.is_reminded) {
-            hideReminderBtn.classList.remove('hidden');
-        } else {
-            hideReminderBtn.classList.add('hidden');
-        }
+        // Кнопка Закрыть
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'flex-1 py-2 px-4 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-medium transition-colors duration-200 flex items-center justify-center';
+        closeBtn.innerHTML = `
+            <span>Закрыть</span>
+        `;
+        closeBtn.addEventListener('click', () => {
+            animateModal(modal, false);
+        });
         
-        // Скрываем кнопку закрытия если она есть
-        const closeBtn = document.getElementById('closeNoteBtn');
-        if (closeBtn) {
-            closeBtn.classList.add('hidden');
-        }
+        // Кнопка Редактировать
+        const editBtn = document.createElement('button');
+        editBtn.className = 'flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors duration-200 flex items-center justify-center';
+        editBtn.innerHTML = `
+            <span>Редактировать</span>
+        `;
+        editBtn.addEventListener('click', () => {
+            const noteId = modal.dataset.noteId;
+            const note = currentNotes.find(n => n.id == noteId);
+            if (note) {
+                animateModal(modal, false);
+                setTimeout(() => openEditNoteModal(note), 300);
+            }
+        });
+        
+        buttonsContainer.appendChild(closeBtn);
+        buttonsContainer.appendChild(editBtn);
+        actionButtonsContainer.appendChild(buttonsContainer);
     }
-
-    animateModal(document.getElementById('viewNoteModal'), true);
+    
+    animateModal(modal, true);
 }
+
+function addModalDecorations(modal, isFromReminder) {
+    // Удаляем старые декорации
+    const oldDecorations = modal.querySelectorAll('.modal-decoration');
+    oldDecorations.forEach(el => el.remove());
+    
+    if (isFromReminder) {
+        // Добавляем анимированные элементы для режима напоминания
+        const decoration1 = document.createElement('div');
+        decoration1.className = 'modal-decoration absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-ping opacity-60';
+        decoration1.style.animation = 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite';
+        
+        const decoration2 = document.createElement('div');
+        decoration2.className = 'modal-decoration absolute -bottom-2 -left-2 w-4 h-4 bg-blue-400 rounded-full animate-bounce';
+        
+        modal.querySelector('.modal-content').appendChild(decoration1);
+        modal.querySelector('.modal-content').appendChild(decoration2);
+    }
+    
+    // Добавляем градиентную обводку
+    const gradientBorder = document.createElement('div');
+    gradientBorder.className = 'modal-decoration absolute inset-0 rounded-2xl pointer-events-none';
+    gradientBorder.style.background = isFromReminder 
+        ? 'linear-gradient(45deg, transparent, transparent), linear-gradient(45deg, #f59e0b, #3b82f6, #8b5cf6)'
+        : 'linear-gradient(45deg, transparent, transparent), linear-gradient(45deg, #3b82f6, #06b6d4, #10b981)';
+    gradientBorder.style.backgroundSize = '400% 400%';
+    gradientBorder.style.animation = 'gradientShift 3s ease infinite';
+    gradientBorder.style.zIndex = '-1';
+    gradientBorder.style.margin = '-2px';
+    gradientBorder.style.borderRadius = 'inherit';
+    
+    modal.querySelector('.modal-content').style.position = 'relative';
+    modal.querySelector('.modal-content').appendChild(gradientBorder);
+}
+
 
 // Удаление заметки
 function deleteNote(noteId) {

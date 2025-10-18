@@ -616,15 +616,6 @@ body.modal-open {
     color: white;
 }
 
-/* Кнопка добавления категории */
-#addCategoryBtn {
-    color: #60a5fa;
-    transition: color 0.3s ease;
-}
-
-#addCategoryBtn:hover {
-    color: #93c5fd;
-}
 
 
 
@@ -1109,3 +1100,6 @@ body.modal-open {
     pointer-events: none !important;
     z-index: 20 !important;
 }
+
+
+
