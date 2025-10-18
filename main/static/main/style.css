@@ -1102,11 +1102,7 @@ body.modal-open {
 }
 
 
-
-
-
-
-/* === Финальный адаптивный FIX хедера для iPhone и Android === */
+/* === Финальный стабильный FIX для хедера (iPhone + Android) === */
 .mobile-header {
   position: sticky;
   top: 0;
@@ -1115,19 +1111,29 @@ body.modal-open {
   z-index: 120;
 
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 
-  height: 65px; /* стандартная высота для Android */
+  /* Базовые параметры (Android / Desktop) */
+  height: 65px;
   padding: 0.75rem 1rem;
   box-sizing: border-box;
 }
 
-/* --- Только для iPhone и Safari (устройства с вырезом) --- */
+/* Только для iPhone / Safari (устройства с вырезом) */
+@supports (padding: max(env(safe-area-inset-top), 0px)) {
+  .mobile-header {
+    align-items: flex-end !important;
+    height: calc(60px + env(safe-area-inset-top)) !important;
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: 0.6rem !important;
+  }
+}
+
 
 
 /* === Принудительное выравнивание хедера для Android === */
@@ -1140,3 +1146,4 @@ body.modal-open {
     box-sizing: border-box !important;
   }
 }
+
