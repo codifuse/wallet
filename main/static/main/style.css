@@ -1163,7 +1163,7 @@ body.modal-open {
 @supports (padding: max(env(safe-area-inset-bottom), 0px)) {
   .mobile-nav {
     padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem) !important;
-    height: calc(60px + env(safe-area-inset-bottom)) !important;
+    height: calc(30px + env(safe-area-inset-bottom)) !important;
     box-sizing: border-box !important;
   }
 }
