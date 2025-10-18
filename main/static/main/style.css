@@ -1134,7 +1134,7 @@ html, body {
   padding-right: env(safe-area-inset-right, 0);
   padding-bottom: 0.5rem;
 
-  height: calc(60px + env(safe-area-inset-top, 0)); /* хедер увеличен вверх */
+  height: calc(80px + env(safe-area-inset-top, 0)); /* хедер увеличен вверх */
   box-sizing: border-box;
 }
 
