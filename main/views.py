@@ -27,14 +27,23 @@ def home(request):
     vapid_key = settings.WEBPUSH_SETTINGS.get("VAPID_PUBLIC_KEY")
     return render(request, "main/index.html", {"vapid_key": vapid_key})
 
+
+
 @require_POST
+@login_required
 def send_note_reminder(request):
-    """Отправка push-уведомления для напоминания заметки"""
+    """Отправка push-уведомления для напоминания заметки ТОЛЬКО текущему пользователю"""
     try:
         data = json.loads(request.body)
         note_id = data.get('note_id')
         title = data.get('title', 'Напоминание')
         content = data.get('content', '')
+        
+        # Проверяем, что заметка принадлежит текущему пользователю
+        try:
+            note = Note.objects.get(id=note_id, user=request.user)
+        except Note.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Заметка не найдена или у вас нет прав доступа'})
         
         # Формируем payload для push-уведомления
         payload = {
@@ -42,34 +51,24 @@ def send_note_reminder(request):
             'body': content[:100] + '...' if len(content) > 100 else content,
             'url': '/',  # URL для открытия приложения
             'icon': '/static/main/icons/icon-192x192.png',
-            'type': 'note_reminder',  # Важно: тип уведомления
+            'type': 'note_reminder',
             'noteId': note_id
         }
         
-        # Отправляем уведомление группе 'all'
-        send_group_notification(
-            group_name='all',
+        # Отправляем уведомление ТОЛЬКО текущему пользователю
+        send_user_notification(
+            user=request.user,  # Отправляем конкретному пользователю
             payload=payload,
             ttl=1000
         )
         
+        print(f"Push-уведомление отправлено пользователю {request.user.username} для заметки {note_id}")
+        
         return JsonResponse({'success': True, 'message': 'Уведомление отправлено'})
         
     except Exception as e:
+        print(f"Ошибка отправки push напоминания: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)})
-    
-
-
-
-def send_test_push(request):
-    payload = {
-        "head": "🚀 Тестовое уведомление",
-        "body": "Если ты видишь это — push работает!",
-        "icon": "/static/main/icons/icon-192x192.png",
-        "url": "/"
-    }
-    send_user_notification(user=request.user, payload=payload, ttl=1000)
-    return JsonResponse({"status": "sent"})
 
 
 
@@ -871,11 +870,13 @@ def mark_note_as_reminded(request, note_id):
     except Note.DoesNotExist:
         return JsonResponse({"success": False, "error": "Заметка не найдена"})
 
+@login_required 
 def get_pending_reminders(request):
-    """Получение ожидающих напоминаний"""
+    """Получение ожидающих напоминаний ТОЛЬКО для текущего пользователя"""
     try:
         now = timezone.now()
         reminders = Note.objects.filter(
+            user=request.user,  # ДОБАВЬТЕ ЭТУ СТРОЧКУ - фильтр по текущему пользователю
             reminder_date__lte=now,
             is_reminded=False
         ).select_related('user')
@@ -890,12 +891,15 @@ def get_pending_reminders(request):
                 'created_at': reminder.created_at.isoformat()
             })
             
+        print(f"Найдено напоминаний для пользователя {request.user.username}: {len(reminders_data)}")
+            
         return JsonResponse({
             'success': True,
             'reminders': reminders_data
         })
         
     except Exception as e:
+        print(f"Ошибка при получении напоминаний: {str(e)}")
         return JsonResponse({
             'success': False,
             'error': str(e)

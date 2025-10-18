@@ -658,27 +658,49 @@ function markNoteAsReminded(noteId) {
 
 // Система напоминаний
 function initReminderSystem() {
+    console.log('Инициализация системы напоминаний...');
+    
+    // Проверяем сразу при загрузке
     checkReminders();
-    // Проверяем каждые 2 минуты вместо 1 минуты для уменьшения нагрузки
-    setInterval(checkReminders, 120000);
+    
+    // Проверяем каждые 30 секунд вместо 2 минут
+    setInterval(checkReminders, 30000);
+    
+    // Дополнительная проверка при фокусе на вкладке
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            console.log('Вкладка активна, проверяем напоминания...');
+            checkReminders();
+        }
+    });
 }
 
 // ИСПРАВЛЕННАЯ ФУНКЦИЯ: Проверка напоминаний
 function checkReminders() {
+    console.log('Проверка напоминаний...');
+    
     fetch('/get_pending_reminders/')
         .then(response => response.json())
         .then(data => {
-            // Сначала очищаем старые уведомления
-            clearStaleNotifications();
-            
             if (data.reminders && data.reminders.length > 0) {
                 console.log('Найдены активные напоминания:', data.reminders.length);
+                
+                // Получаем текущие уведомления
+                const notificationContainer = document.getElementById('notificationContainer');
+                if (!notificationContainer) return;
+                
+                const currentNotifications = notificationContainer.querySelectorAll('[data-reminder-id]');
+                const currentNotificationIds = Array.from(currentNotifications).map(el => el.dataset.reminderId);
+                
+                // Показываем только новые напоминания
                 data.reminders.forEach(reminder => {
-                    // ПОКАЗЫВАЕМ УВЕДОМЛЕНИЕ ДЛЯ КАЖДОГО АКТИВНОГО НАПОМИНАНИЯ
-                    showReminderNotification(reminder);
-                    
-                    // ОТПРАВЛЯЕМ PUSH-УВЕДОМЛЕНИЕ
-                    sendReminderPush(reminder);
+                    if (!currentNotificationIds.includes(reminder.id.toString())) {
+                        console.log('Показываем новое напоминание:', reminder.id);
+                        showReminderNotification(reminder);
+                        
+                        // Отправляем push-уведомление
+                        sendReminderPush(reminder);
+                    }
                 });
             } else {
                 console.log('Активных напоминаний нет');
@@ -688,7 +710,6 @@ function checkReminders() {
             console.error('Ошибка при проверке напоминаний:', error);
         });
 }
-
 
 
 // ИСПРАВЛЕННАЯ ФУНКЦИЯ: Показ уведомления о напоминании
@@ -720,20 +741,13 @@ function showReminderNotification(reminder) {
             <i class="fas fa-bell mr-3 p-1 text-yellow-300 animate-pulse"></i>
             <div class="flex-1">
                 <div class="font-semibold text-white text-xs">Напоминание</div>
-                <div class="text-gray-300 text-xs">${truncatedTitle}</div>
+              
             </div>
-            <button class="close-reminder-notification text-gray-400 hover:text-gray-200 transition-colors ml-2">
-                <i class="fas fa-times"></i>
-            </button>
+           
         </div>
     `;
 
-    // Обработчик закрытия уведомления
-    const closeBtn = notification.querySelector('.close-reminder-notification');
-    closeBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        notification.remove();
-    });
+    
 
     // При клике на уведомление открываем заметку
     notification.addEventListener('click', function(e) {
