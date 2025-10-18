@@ -1103,31 +1103,44 @@ body.modal-open {
 
 
 
-/* === FIX: safe-area для iPhone (notch, island) === */
-
-/* Общий фон — заливает до самой границы экрана */
+/* === iPhone safe-area fix (вырезы + home indicator) === */
 html, body {
-  background-color: #0f172a; /* или твой цвет */
+  background-color: #0f172a;
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Верхний хедер — учитывает safe area */
+/* Хедер: фон растягивается под вырез, контент остаётся на месте */
 .mobile-header {
-  padding-top: calc(env(safe-area-inset-top) + 0.5rem) !important;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
   position: sticky;
   top: 0;
   left: 0;
   right: 0;
   z-index: 120;
+  height: calc(60px + env(safe-area-inset-top)); /* высота увеличивается */
+  display: flex;
+  align-items: flex-end; /* контент остаётся внизу */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: 0.5rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
 }
 
-/* Нижняя навигация — чтобы не уползала за home-индикатор */
+/* Лого, кнопки и прочие элементы хедера */
+.mobile-header .flex.justify-between.items-center {
+  margin-bottom: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Нижняя навигация: добавляем отступ под home-индикатор */
 .mobile-nav {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem) !important;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.25rem) !important;
+  height: calc(70px + env(safe-area-inset-bottom)); /* чтобы не "сплющивалась" */
 }
 
 
